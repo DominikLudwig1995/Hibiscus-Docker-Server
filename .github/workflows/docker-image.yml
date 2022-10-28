@@ -1,0 +1,32 @@
+name: Build
+on: [pull_request, push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.pull_request.title, '[skip ci]') && !contains(github.event.pull_request.title, '[ci skip]')"
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v2
+      with:
+          distribution: 'adopt'
+          java-version: '11.x'
+
+    - name: Build the Docker image
+      run: |
+        echo $CR_PAT | docker login ghcr.io -u YourAccountOrGHOrgaNameHere --password-stdin
+        docker build -t hibiscus:latest .
+      env:
+        CR_PAT: ${{ secrets.CR_PAT }}
+    - name: Get the version
+      id: vars
+      run: echo ::set-output name=tag::$(date +%s)
+
+    - name: Tag the Docker image
+      run: docker tag hibiscus:latest ghcr.io/dominikludwig1995/hibiscus:${{steps.vars.outputs.tag}}
+    - name: Tag the latest Docker image
+      run: docker tag hibiscus:latest ghcr.io/dominikludwig1995/hibiscus:latest
+    - name: Push the tagged Docker image
+      run: docker push ghcr.io/dominikludwig1995/hibiscus:${{steps.vars.outputs.tag}}
+    - name: Push the latest Docker image
+      run: docker push ghcr.io/dominikludwig1995/hibiscus:latest

@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+  hibiscus-service:
+    image: hibiscus:latest
+    container_name: hibiscus
+    restart: always
+    build: .
+    volumes:
+      - ./pwd:/run/secret/pwd

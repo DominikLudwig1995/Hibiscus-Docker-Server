@@ -1,4 +1,5 @@
-FROM ubuntu:22.04
+#FROM ubuntu:22.04
+FROM tianon/raspbian:buster-slim
 
 ARG HIBISCUS_VERSION=2.10.7
 

@@ -9,7 +9,6 @@ RUN apt update && \
 RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip
 RUN unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d / && rm hibiscus-server-${HIBISCUS_VERSION}.zip
 
-ADD files/HBCIDBService.properties hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
 ADD files/UpdateService.properties hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties
 ADD files/Plugin.properties hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties
 

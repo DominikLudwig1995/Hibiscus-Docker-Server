@@ -6,4 +6,5 @@ services:
     restart: always
     build: .
     volumes:
-      - ./pwd:/run/secret/pwd
+      - ./secrets/pwd:/run/secret/pwd
+      - ./secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties

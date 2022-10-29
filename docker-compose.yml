@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.3"
 services:
   hibiscus-service:
     image: hibiscus:latest
@@ -8,3 +8,6 @@ services:
     volumes:
       - ./secrets/pwd:/run/secret/pwd
       - ./secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
+      - /home/pi/.jameica:/.jameica
+    ports:
+      - 8888:888

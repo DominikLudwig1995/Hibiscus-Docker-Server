@@ -10,4 +10,4 @@ services:
       - ./secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
       - /home/pi/.jameica:/.jameica
     ports:
-      - 8888:888
+      - 8888:8888

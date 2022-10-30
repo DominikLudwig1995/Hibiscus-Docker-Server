@@ -20,7 +20,7 @@ RUN rm hibiscus-server/jameicaserver.exe && \
 
 WORKDIR /hibiscus-server/
 
-RUN chmod +x "/jameicaserver.sh"
+RUN chmod +x "jameicaserver.sh"
 
 USER hibiscus
 

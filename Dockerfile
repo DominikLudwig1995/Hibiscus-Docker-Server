@@ -1,6 +1,7 @@
 #FROM ubuntu:22.04
 FROM tianon/raspbian:buster-slim
 
+# Variables
 ARG HIBISCUS_VERSION=2.10.7
 ARG USERNAME=hibiscus
 ARG USER_UID=1000
@@ -17,7 +18,6 @@ RUN apt-get update && \
 
 # Switch to hibiscus user
 USER $USERNAME
-
 WORKDIR /home/hibiscus/
 
 # Install hibiscus server
@@ -36,7 +36,9 @@ ADD files/Plugin.properties hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plug
 RUN rm hibiscus-server/jameicaserver.exe && \
     rm hibiscus-server/jameica-win32.jar
 
+# Run hibiscus
 RUN chmod +x "hibiscus-server/jameicaserver.sh"
 CMD ["./hibiscus-server/jameicaserver.sh","-w","/run/secret/pwd"]
 
+# Expose new hibiscus port
 EXPOSE 8888

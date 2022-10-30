@@ -7,11 +7,11 @@ services:
     build: .
     volumes:
       - /home/pi/secrets/pwd:/run/secret/pwd
-      - /home/pi/secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
-      - /home/pi/secrets/PinTanConfig.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties
+      - /home/pi/secrets/HBCIDBService.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
+      - /home/pi/secrets/PinTanConfig.properties:/home/hibiscus//hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties
       #- ./secrets/pwd.dummy:/run/secret/pwd
-      #- ./secrets/HBCIDBService.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
-      #- ./secret/PinTanConfig.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties
+      #- ./secrets/HBCIDBService.properties.dummy:/home/hibiscus//hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
+      #- ./secret/PinTanConfig.properties.dummy:/home/hibiscus//hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties
       - /home/pi/.jameica:/home/hibiscus/.jameica:rw
     ports:
       - 8888:8888

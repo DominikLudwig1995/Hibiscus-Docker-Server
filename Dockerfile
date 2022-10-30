@@ -22,7 +22,7 @@ WORKDIR /home/hibiscus/
 
 # Install hibiscus server
 RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip -P /home/hibiscus/ && \
-     unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d / && rm hibiscus-server-${HIBISCUS_VERSION}.zip && \
+    unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d /home/hibiscus/  && rm hibiscus-server-${HIBISCUS_VERSION}.zip && \
      rm hibiscus-server/lib/mysql/* && \
      wget https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.0.4/mariadb-java-client-3.0.4.jar -P hibiscus-server/lib/mysql && \
      wget https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/2.4.4/mariadb-java-client-2.4.4.jar -P hibiscus-server/lib/mysql  && \

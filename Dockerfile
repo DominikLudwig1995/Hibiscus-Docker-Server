@@ -21,6 +21,7 @@ RUN rm hibiscus-server/jameicaserver.exe && \
 WORKDIR /hibiscus-server/
 
 RUN chmod +x "jameicaserver.sh"
+RUN RUN groupadd -r hibiscus && useradd --no-log-init -r -g hibiscus hibiscus
 
 USER hibiscus
 

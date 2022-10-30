@@ -11,8 +11,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME 
 
 # Install packages
-RUN apt update && \
-    apt install -y default-jre wget unzip vim libmariadb-java 
+RUN apt-get update && \
+    apt-get upgrade && \
+    apt-get install -y default-jre wget unzip vim libmariadb-java 
 
 # Switch to hibiscus user
 USER $USERNAME
@@ -20,7 +21,7 @@ USER $USERNAME
 WORKDIR /home/hibiscus/
 
 # Install hibiscus server
-RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip && \
+RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip -p /home/hibiscus/ && \
      unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d / && rm hibiscus-server-${HIBISCUS_VERSION}.zip && \
      rm hibiscus-server/lib/mysql/* && \
      wget https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.0.4/mariadb-java-client-3.0.4.jar -P hibiscus-server/lib/mysql && \

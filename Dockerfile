@@ -12,7 +12,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Install packages
 RUN apt-get update && \
-    apt-get upgrade && \
+    apt-get upgrade -y && \
     apt-get install -y default-jre wget unzip vim libmariadb-java 
 
 # Switch to hibiscus user

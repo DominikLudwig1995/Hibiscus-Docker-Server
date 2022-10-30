@@ -15,4 +15,6 @@ cp ./secret /home/pi/secrets
 Run
 ```
 docker-compose up -d
+or
+docker run -it hibiscus bash
 ```

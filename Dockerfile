@@ -4,7 +4,8 @@ FROM tianon/raspbian:buster-slim
 ARG HIBISCUS_VERSION=2.10.7
 
 RUN apt update && \
-    apt install -y default-jre wget unzip
+    apt install -y default-jre wget unzip libmariadb-java #mysql-client
+
 
 RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip && \
     unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d / && rm hibiscus-server-${HIBISCUS_VERSION}.zip && \
@@ -14,8 +15,9 @@ RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-serve
 ADD files/UpdateService.properties hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties
 ADD files/Plugin.properties hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties
 
-RUN rm hibiscus-server/jameicaserver.exe
-RUN rm hibiscus-server/jameica-win32.jar
+RUN rm hibiscus-server/jameicaserver.exe && \
+    rm hibiscus-server/jameica-win32.jar
+
 RUN chmod +x "/hibiscus-server/jameicaserver.sh"
 
 CMD ["./hibiscus-server/jameicaserver.sh","-w","/run/secret/pwd"]

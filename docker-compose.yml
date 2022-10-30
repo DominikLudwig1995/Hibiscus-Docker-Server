@@ -1,4 +1,4 @@
-version: "3.3"
+version: "3"
 services:
   hibiscus-service:
     image: hibiscus:latest
@@ -6,8 +6,9 @@ services:
     restart: always
     build: .
     volumes:
-      - ./secrets/pwd:/run/secret/pwd
-      - ./secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
+      - ./secrets/pwd.dummy:/run/secret/pwd
+      - ./secrets/HBCIDBService.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
       - /home/pi/.jameica:/.jameica
     ports:
       - 8888:8888
+    network_mode: bridge

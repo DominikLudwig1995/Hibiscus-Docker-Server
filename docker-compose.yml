@@ -12,7 +12,7 @@ services:
       #- ./secrets/pwd.dummy:/run/secret/pwd
       #- ./secrets/HBCIDBService.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
       #- ./secret/PinTanConfig.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties
-      - /home/pi/.jameica:/home/hibiscus/.jameica
+      - /home/pi/.jameica:/home/hibiscus/.jameica:rw
     ports:
       - 8888:8888
     network_mode: bridge

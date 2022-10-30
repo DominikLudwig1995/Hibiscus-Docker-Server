@@ -5,6 +5,12 @@ ARG HIBISCUS_VERSION=2.10.7
 
 RUN apt update && \
     apt install -y default-jre wget unzip vim libmariadb-java 
+
+RUN groupadd -r hibiscus && useradd --no-log-init -r -g hibiscus hibiscus
+USER hibiscus
+
+WORKDIR /home/hibiscus/
+
 RUN wget https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip && \
      unzip hibiscus-server-${HIBISCUS_VERSION}.zip -d / && rm hibiscus-server-${HIBISCUS_VERSION}.zip && \
      rm hibiscus-server/lib/mysql/* && \
@@ -18,13 +24,8 @@ ADD files/Plugin.properties hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plug
 RUN rm hibiscus-server/jameicaserver.exe && \
     rm hibiscus-server/jameica-win32.jar
 
-WORKDIR /hibiscus-server/
+RUN chmod +x "hibiscus-server/jameicaserver.sh"
 
-RUN chmod +x "jameicaserver.sh"
-RUN groupadd -r hibiscus && useradd --no-log-init -r -g hibiscus hibiscus
-
-USER hibiscus
-
-CMD ["./jameicaserver.sh","-w","/run/secret/pwd"]
+CMD ["./hibiscus-server/jameicaserver.sh","-w","/run/secret/pwd"]
 
 EXPOSE 8888

@@ -7,6 +7,11 @@ or
 docker-compose build
 ```
 
+Configure
+```
+cp ./secret /home/pi/secrets
+```
+
 Run
 ```
 docker-compose up -d

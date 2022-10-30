@@ -8,6 +8,8 @@ services:
     volumes:
       - /home/pi/secrets/pwd:/run/secret/pwd
       - /home/pi/secrets/HBCIDBService.properties:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
+      #- ./secrets/pwd.dummy:/run/secret/pwd
+      #- ./secrets/HBCIDBService.properties.dummy:/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties
       - /home/pi/.jameica:/.jameica
     ports:
       - 8888:8888

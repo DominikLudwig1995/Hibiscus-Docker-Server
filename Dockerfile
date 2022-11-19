@@ -1,5 +1,6 @@
-#FROM ubuntu:22.04
-FROM tianon/raspbian:buster-slim
+FROM ubuntu:22.04
+#Use the following image for arm based systems
+#FROM tianon/raspbian:buster-slim
 
 # Variables
 ARG HIBISCUS_VERSION=2.10.7

@@ -39,6 +39,7 @@ RUN rm hibiscus-server/jameicaserver.exe && \
 # Run hibiscus
 RUN chmod +x "hibiscus-server/jameicaserver.sh"
 CMD ["./hibiscus-server/jameicaserver.sh","-w","/run/secret/pwd"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 
 # Expose new hibiscus port
 EXPOSE 8888

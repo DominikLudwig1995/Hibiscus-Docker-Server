@@ -10,7 +10,7 @@
 [![Hibiscus](https://img.shields.io/badge/hibiscus--server-2.12.4-green)](https://www.willuhn.de/products/hibiscus-server/)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-lightgrey)](#image-tags)
 
-[**Pull the image**](#quick-start) · [**Configuration**](#configuration) · [**Provisioning**](#provisioning-cli)
+[**Pull the image**](#quick-start) · [**Configuration**](#configuration) · [**Provisioning**](#provisioning-cli) · [**Credits**](#credits)
 
 </div>
 
@@ -251,6 +251,20 @@ docker compose up -d
 - No secrets are baked into the image — all sensitive values are injected at runtime
 - Container runs as a non-root user (`hibiscus`, UID 1000)
 - Mend/WhiteSource SCA configured via `.whitesource`
+
+---
+
+---
+
+## Credits
+
+This project would not exist without the work of [oliv3r](https://github.com/oliv3r) and all contributors to **Hibiscus Server**.
+
+- **Hibiscus Server** — [willuhn.de/products/hibiscus-server](https://www.willuhn.de/products/hibiscus-server/)
+- **Source code** — [github.com/willuhn-open-projects/hibiscus](https://github.com/willuhn-open-projects/hibiscus)
+- **Jameica (the plugin runtime)** — [willuhn.de/products/jameica](https://www.willuhn.de/products/jameica/)
+
+Thank you for building and maintaining open-source banking software that puts users in control of their own financial data.
 
 ---
 

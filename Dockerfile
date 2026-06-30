@@ -3,8 +3,10 @@
 # Nothing from this stage leaks into the final image except the app directory.
 FROM ubuntu:26.04 AS hibiscus-fetch
 
-ARG HIBISCUS_VERSION=2.10.7
+ARG HIBISCUS_VERSION=2.12.4
 ARG MARIADB_CONNECTOR_VERSION=3.5.3
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget unzip ca-certificates && \
@@ -17,10 +19,9 @@ RUN wget -q \
         -O hibiscus.zip && \
     unzip -q hibiscus.zip && \
     rm hibiscus.zip && \
-    # Remove Windows-only artefacts
-    rm -f hibiscus-server/jameicaserver.exe hibiscus-server/jameica-win32.jar && \
-    # Replace bundled MySQL jars with a single up-to-date MariaDB connector
-    rm -f hibiscus-server/lib/mysql/* && \
+    rm -f hibiscus-server/jameicaserver.exe hibiscus-server/jameica-win32.jar
+
+RUN rm -f hibiscus-server/lib/mysql/* && \
     wget -q \
         "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
         -P hibiscus-server/lib/mysql/
@@ -29,6 +30,8 @@ RUN wget -q \
 # Builds an isolated Python venv with provisioning dependencies.
 # Isolating pip work here means no pip/wheel/setuptools in the final image.
 FROM ubuntu:26.04 AS python-venv
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 python3-venv python3-pip && \
@@ -46,6 +49,8 @@ FROM ubuntu:26.04
 ARG USERNAME=hibiscus
 ARG USER_UID=1000
 ARG USER_GID=1000
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 LABEL org.opencontainers.image.title="Hibiscus Server" \
       org.opencontainers.image.description="Dockerized HBCI/FinTS online banking server" \

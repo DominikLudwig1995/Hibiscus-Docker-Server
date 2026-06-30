@@ -6,7 +6,7 @@ services:
     build:
       context: .
       args:
-        HIBISCUS_VERSION: "2.10.7"
+        HIBISCUS_VERSION: "2.12.4"
     environment:
       # Database connection
       HIBISCUS_DB_HOST:     ${HIBISCUS_DB_HOST:-127.0.0.1}

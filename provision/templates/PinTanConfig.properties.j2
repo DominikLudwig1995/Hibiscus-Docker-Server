@@ -1,0 +1,10 @@
+{% for account in accounts %}
+{{ account.name }}.server={{ account.server }}
+{{ account.name }}.port={{ account.port | default(443) }}
+{{ account.name }}.blz={{ account.blz }}
+{{ account.name }}.userid={{ account.userid }}
+{{ account.name }}.customerid={{ account.customerid | default(account.userid) }}
+{% if account.hbciversion is defined %}
+{{ account.name }}.hbciversion={{ account.hbciversion }}
+{% endif %}
+{% endfor %}

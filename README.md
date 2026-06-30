@@ -15,8 +15,10 @@ Pre-built images are published to the GitHub Container Registry on every push to
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Image Tags](#image-tags)
+- [Provisioning](#provisioning)
 - [Configuration](#configuration)
 - [Building Locally](#building-locally)
+- [Testing](#testing)
 - [Environment Variables](#environment-variables)
 - [Secrets](#secrets)
 - [Upgrading Hibiscus](#upgrading-hibiscus)
@@ -73,6 +75,43 @@ docker pull ghcr.io/dominikludwig1995/hibiscus:main
 
 ---
 
+## Provisioning
+
+The `provision/` directory contains a Python script that renders Jinja2 templates into ready-to-use secret files.  
+This replaces manual editing of `.properties` files and is safe to run in CI or as part of your deployment pipeline.
+
+### Setup
+
+```bash
+pip install -r provision/requirements.txt
+```
+
+### Usage
+
+```bash
+# Copy and edit the example config
+cp provision/config.example.yml provision/config.yml
+$EDITOR provision/config.yml
+
+# Dry run — prints rendered output without writing files
+python provision/provision.py --config provision/config.yml --dry-run
+
+# Write files to ./secrets/
+python provision/provision.py --config provision/config.yml --out ./secrets
+```
+
+### Templates
+
+| Template | Output file | Purpose |
+|----------|-------------|---------|
+| `HBCIDBService.properties.j2` | `HBCIDBService.properties` | Database connection |
+| `PinTanConfig.properties.j2` | `PinTanConfig.properties` | Bank account / PIN-TAN config |
+| `Plugin.properties.j2` | `Plugin.properties` | Web interface settings |
+
+`config.example.yml` documents every available variable with defaults and comments.
+
+---
+
 ## Configuration
 
 ### Production
@@ -105,6 +144,28 @@ docker build --build-arg HIBISCUS_VERSION=2.10.7 -t hibiscus:2.10.7 .
 # Multi-platform build (requires Buildx)
 docker buildx build --platform linux/amd64,linux/arm64 -t hibiscus:local .
 ```
+
+---
+
+## Testing
+
+### Provisioning script (pytest)
+
+```bash
+pip install -r provision/requirements.txt pytest
+pytest tests/test_provision.py -v
+```
+
+### Container structure tests
+
+Requires [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test).
+
+```bash
+docker build -t hibiscus:test .
+container-structure-test test --image hibiscus:test --config tests/container-structure-test.yml
+```
+
+Both test suites run automatically in CI on every push and pull request.
 
 ---
 

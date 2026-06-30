@@ -1,0 +1,57 @@
+schemaVersion: "2.0.0"
+
+metadataTest:
+  exposedPorts: ["8888"]
+
+commandTests:
+  - name: "Java is available"
+    command: "java"
+    args: ["-version"]
+    exitCode: 0
+
+  - name: "Hibiscus startup script exists and is executable"
+    command: "test"
+    args: ["-x", "/home/hibiscus/hibiscus-server/jameicaserver.sh"]
+    exitCode: 0
+
+  - name: "MariaDB connector jar is present"
+    command: "sh"
+    args: ["-c", "ls /home/hibiscus/hibiscus-server/lib/mysql/mariadb-java-client-*.jar"]
+    exitCode: 0
+
+  - name: "No Windows artefacts remain"
+    command: "sh"
+    args: ["-c", "! ls /home/hibiscus/hibiscus-server/jameicaserver.exe 2>/dev/null"]
+    exitCode: 0
+
+  - name: "No legacy MySQL connector jars remain"
+    command: "sh"
+    args: ["-c", "! ls /home/hibiscus/hibiscus-server/lib/mysql/mysql-connector-java-*.jar 2>/dev/null"]
+    exitCode: 0
+
+fileExistenceTests:
+  - name: "Hibiscus server directory"
+    path: "/home/hibiscus/hibiscus-server"
+    shouldExist: true
+    isDirectory: true
+
+  - name: "UpdateService config"
+    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
+    shouldExist: true
+
+  - name: "Plugin (webadmin) config"
+    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties"
+    shouldExist: true
+
+  - name: "jameicaserver.sh"
+    path: "/home/hibiscus/hibiscus-server/jameicaserver.sh"
+    shouldExist: true
+
+fileContentTests:
+  - name: "HTTP port is 8888"
+    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties"
+    expectedContents: ["listener.http.port=8888"]
+
+  - name: "Auto-update is disabled"
+    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
+    expectedContents: ["update.check=false"]

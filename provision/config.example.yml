@@ -1,0 +1,28 @@
+# Hibiscus provisioning config — copy to config.yml and fill in your values.
+# Run: python provision.py --config config.yml
+
+# Master password for the Hibiscus keystore
+hibiscus_password: "changeme"
+
+# Web interface settings
+http_port: 8888
+http_auth: true
+http_ssl: true
+
+# Database connection
+db_host: "127.0.0.1"
+db_port: 3306
+db_name: "hibiscus"
+db_username: "hibiscus"
+db_password: "changeme"
+# db_driver: "de.willuhn.jameica.hbci.server.DBSupportMySqlImpl"  # default
+
+# Bank accounts (one entry per account)
+accounts:
+  - name: "mybank"
+    server: "hbci.mybank.de"
+    port: 443
+    blz: "12345678"
+    userid: "myuserid"
+    customerid: "myuserid"   # optional, defaults to userid
+    hbciversion: "300"       # optional

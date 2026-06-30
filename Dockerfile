@@ -1,7 +1,7 @@
 # ── Stage 1: hibiscus-fetch ───────────────────────────────────────────────────
 # Downloads and prepares the Hibiscus server distribution.
 # Nothing from this stage leaks into the final image except the app directory.
-FROM ubuntu:24.04 AS hibiscus-fetch
+FROM ubuntu:26.04 AS hibiscus-fetch
 
 ARG HIBISCUS_VERSION=2.10.7
 ARG MARIADB_CONNECTOR_VERSION=3.5.3
@@ -28,7 +28,7 @@ RUN wget -q \
 # ── Stage 2: python-venv ──────────────────────────────────────────────────────
 # Builds an isolated Python venv with provisioning dependencies.
 # Isolating pip work here means no pip/wheel/setuptools in the final image.
-FROM ubuntu:24.04 AS python-venv
+FROM ubuntu:26.04 AS python-venv
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 python3-venv python3-pip && \
@@ -41,7 +41,7 @@ RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ARG USERNAME=hibiscus
 ARG USER_UID=1000
@@ -52,8 +52,12 @@ LABEL org.opencontainers.image.title="Hibiscus Server" \
       org.opencontainers.image.source="https://github.com/DominikLudwig1995/Hibiscus-Docker-Server" \
       org.opencontainers.image.licenses="MIT"
 
-RUN groupadd --gid $USER_GID $USERNAME && \
-    useradd --uid $USER_UID --gid $USER_GID --create-home $USERNAME
+# Ubuntu base images ship an 'ubuntu' user at UID/GID 1000; remove it first
+# so we can claim those IDs for the hibiscus service user.
+RUN userdel -r ubuntu 2>/dev/null || true && \
+    groupdel ubuntu  2>/dev/null || true && \
+    groupadd --gid $USER_GID $USERNAME && \
+    useradd  --uid $USER_UID --gid $USER_GID --create-home --no-log-init $USERNAME
 
 # Runtime packages only — no build or download tooling
 RUN apt-get update && \

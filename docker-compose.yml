@@ -18,31 +18,34 @@ services:
       start_period: 10s
 
   hibiscus:
-    image: ghcr.io/dominikludwig1995/hibiscus:main
+    image: ${HIBISCUS_IMAGE:-ghcr.io/dominikludwig1995/hibiscus:2.12.4}
     container_name: hibiscus
     restart: unless-stopped
     build:
       context: .
+      dockerfile: Dockerfile
       args:
-        HIBISCUS_VERSION: "2.12.4"
+        HIBISCUS_VERSION: ${HIBISCUS_VERSION:-2.12.4}
+        MARIADB_CONNECTOR_VERSION: ${MARIADB_CONNECTOR_VERSION:-3.5.3}
+        POSTGRES_DRIVER_VERSION: ${POSTGRES_DRIVER_VERSION:-42.7.7}
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       # Master password (required)
-      HIBISCUS_PASSWORD:        ${HIBISCUS_PASSWORD:?HIBISCUS_PASSWORD must be set in .env}
+      HIBISCUS_PASSWORD:    ${HIBISCUS_PASSWORD:?HIBISCUS_PASSWORD must be set in .env}
       # Database — points at the postgres service above
-      HIBISCUS_DB_TYPE:         postgresql
-      HIBISCUS_DB_HOST:         postgres
-      HIBISCUS_DB_PORT:         5432
-      HIBISCUS_DB_NAME:         ${DB_NAME:-hibiscus}
-      HIBISCUS_DB_USERNAME:     ${DB_USERNAME:-hibiscus}
-      HIBISCUS_DB_PASSWORD:     ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      HIBISCUS_DB_TYPE:     postgresql
+      HIBISCUS_DB_HOST:     postgres
+      HIBISCUS_DB_PORT:     5432
+      HIBISCUS_DB_NAME:     ${DB_NAME:-hibiscus}
+      HIBISCUS_DB_USERNAME: ${DB_USERNAME:-hibiscus}
+      HIBISCUS_DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       # Web interface
-      HIBISCUS_HTTP_PORT:       ${HIBISCUS_HTTP_PORT:-8888}
-      HIBISCUS_HTTP_AUTH:       ${HIBISCUS_HTTP_AUTH:-true}
-      HIBISCUS_HTTP_SSL:        ${HIBISCUS_HTTP_SSL:-true}
-      # Optional: mount a YAML file with bank account entries
+      HIBISCUS_HTTP_PORT:   ${HIBISCUS_HTTP_PORT:-8888}
+      HIBISCUS_HTTP_AUTH:   ${HIBISCUS_HTTP_AUTH:-true}
+      HIBISCUS_HTTP_SSL:    ${HIBISCUS_HTTP_SSL:-true}
+      # Optional: path to a YAML file with bank account entries
       # HIBISCUS_ACCOUNTS_FILE: /run/accounts.yml
     volumes:
       - ${JAMEICA_DATA_PATH:-./data/jameica}:/home/hibiscus/.jameica:rw

@@ -8,10 +8,10 @@ services:
       args:
         HIBISCUS_VERSION: "2.10.7"
     volumes:
-      - ${SECRETS_PATH:-/home/pi/secrets}/pwd:/run/secret/pwd:ro
-      - ${SECRETS_PATH:-/home/pi/secrets}/HBCIDBService.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties:ro
-      - ${SECRETS_PATH:-/home/pi/secrets}/PinTanConfig.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties:ro
-      - ${JAMEICA_DATA_PATH:-/home/pi/.jameica}:/home/hibiscus/.jameica:rw
+      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/pwd:/run/secret/pwd:ro
+      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/HBCIDBService.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties:ro
+      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/PinTanConfig.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties:ro
+      - ${JAMEICA_DATA_PATH:-/opt/hibiscus/data}:/home/hibiscus/.jameica:rw
     ports:
       - "${HIBISCUS_PORT:-8888}:8888"
     healthcheck:

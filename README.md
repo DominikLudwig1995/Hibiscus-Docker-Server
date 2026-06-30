@@ -2,12 +2,11 @@
 
 [![Build & Publish Docker Image](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/actions/workflows/docker-image.yml/badge.svg)](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/actions/workflows/docker-image.yml)
 [![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-dominikludwig1995%2Fhibiscus-blue?logo=github)](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/pkgs/container/hibiscus)
-[![License](https://img.shields.io/github/license/DominikLudwig1995/Hibiscus-Docker-Server)](LICENSE)
 [![Ubuntu 24.04](https://img.shields.io/badge/ubuntu-24.04-orange?logo=ubuntu)](https://hub.docker.com/_/ubuntu)
 
 Dockerized [Hibiscus Server](https://www.willuhn.de/products/hibiscus-server/) — a self-hosted HBCI/FinTS online banking server.  
 Runs on `linux/amd64` and `linux/arm64` (Raspberry Pi, Apple Silicon).  
-Pre-built images are published to the GitHub Container Registry on every push to `main`.
+Pre-built images are published to the GitHub Container Registry on every push to `main` and on git version tags.
 
 ---
 
@@ -15,6 +14,7 @@ Pre-built images are published to the GitHub Container Registry on every push to
 
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
+- [Image Tags](#image-tags)
 - [Configuration](#configuration)
 - [Building Locally](#building-locally)
 - [Environment Variables](#environment-variables)
@@ -26,7 +26,7 @@ Pre-built images are published to the GitHub Container Registry on every push to
 
 ## Quick Start
 
-Pull the pre-built image and start the server with dummy secrets for local testing:
+Pull the image and start the server with dummy secrets for local testing:
 
 ```bash
 # Copy dummy secrets
@@ -49,24 +49,47 @@ Open `http://localhost:8888` in your browser.
 
 ---
 
+## Image Tags
+
+Images are published to `ghcr.io/dominikludwig1995/hibiscus`.
+
+| Tag | Description |
+|-----|-------------|
+| `main` | Latest build from the `main` branch |
+| `sha-<commit>` | Immutable build pinned to a specific commit |
+| `v2.10.7` | Full semver tag (on git release tags) |
+| `2.10` | Minor version alias (on git release tags) |
+| `2` | Major version alias (on git release tags) |
+
+**Recommendation:** pin to a specific `sha-` or semver tag in production — never rely on a mutable branch tag for stability.
+
+```bash
+# Pull a specific immutable version
+docker pull ghcr.io/dominikludwig1995/hibiscus:sha-abc1234
+
+# Pull latest main branch build (mutable)
+docker pull ghcr.io/dominikludwig1995/hibiscus:main
+```
+
+---
+
 ## Configuration
 
-### Production (Raspberry Pi / home server)
+### Production
 
 1. Copy your secrets to the server:
 
 ```bash
-scp secrets/ pi@<your-server>:/home/pi/secrets/
+scp -r secrets/ user@<your-server>:/opt/hibiscus/secrets/
 ```
 
-2. Start the stack:
+2. Create a `.env` file on the server (see [Environment Variables](#environment-variables)).
+
+3. Start the stack:
 
 ```bash
-docker compose up -d
+docker compose --env-file .env up -d
 ```
-
-The default volume paths expect secrets at `/home/pi/secrets/` and Jameica data at `/home/pi/.jameica`.  
-Override them with environment variables — see [Environment Variables](#environment-variables).
 
 ---
 
@@ -74,24 +97,24 @@ Override them with environment variables — see [Environment Variables](#enviro
 
 ```bash
 # Build with default Hibiscus version
-docker build -t hibiscus:latest .
+docker build -t hibiscus:local .
 
 # Build with a specific version
 docker build --build-arg HIBISCUS_VERSION=2.10.7 -t hibiscus:2.10.7 .
 
 # Multi-platform build (requires Buildx)
-docker buildx build --platform linux/amd64,linux/arm64 -t hibiscus:latest .
+docker buildx build --platform linux/amd64,linux/arm64 -t hibiscus:local .
 ```
 
 ---
 
 ## Environment Variables
 
-| Variable            | Default              | Description                            |
-|---------------------|----------------------|----------------------------------------|
-| `SECRETS_PATH`      | `/home/pi/secrets`   | Host directory containing secret files |
-| `JAMEICA_DATA_PATH` | `/home/pi/.jameica`  | Host directory for persistent Jameica data |
-| `HIBISCUS_PORT`     | `8888`               | Host port to expose                    |
+| Variable            | Default                  | Description                              |
+|---------------------|--------------------------|------------------------------------------|
+| `SECRETS_PATH`      | `/opt/hibiscus/secrets`  | Host directory containing secret files   |
+| `JAMEICA_DATA_PATH` | `/opt/hibiscus/data`     | Host directory for persistent Jameica data |
+| `HIBISCUS_PORT`     | `8888`                   | Host port to expose                      |
 
 Example `.env` file:
 
@@ -105,28 +128,28 @@ HIBISCUS_PORT=8888
 
 ## Secrets
 
-The following files must be mounted as volumes:
+The following files must be present in `SECRETS_PATH` and are mounted read-only:
 
-| File                          | Purpose                              |
-|-------------------------------|--------------------------------------|
-| `pwd`                         | Hibiscus master password             |
-| `HBCIDBService.properties`    | HBCI database connection settings   |
-| `PinTanConfig.properties`     | PIN/TAN passport configuration       |
+| File                          | Purpose                             |
+|-------------------------------|-------------------------------------|
+| `pwd`                         | Hibiscus master password            |
+| `HBCIDBService.properties`    | HBCI database connection settings  |
+| `PinTanConfig.properties`     | PIN/TAN passport configuration      |
 
-Dummy templates are provided in the `secrets/` directory.
+Dummy templates are provided in the `secrets/` directory of this repository.
 
 ---
 
 ## Upgrading Hibiscus
 
-Update the `HIBISCUS_VERSION` build arg in `docker-compose.yml`, then rebuild:
+Update `HIBISCUS_VERSION` in `docker-compose.yml`, then rebuild:
 
 ```bash
 docker compose build --no-cache
 docker compose up -d
 ```
 
-Or set the version via the build arg directly:
+Or pass the version directly at build time:
 
 ```bash
 docker build --build-arg HIBISCUS_VERSION=2.10.8 -t hibiscus:2.10.8 .
@@ -137,14 +160,14 @@ docker build --build-arg HIBISCUS_VERSION=2.10.8 -t hibiscus:2.10.8 .
 ## Troubleshooting
 
 **Container exits immediately**
-- Check that all three secret files are present and correctly mounted.
+- Verify all three secret files exist and are correctly mounted.
 - Run `docker logs hibiscus` for details.
 
 **Port already in use**
-- Change `HIBISCUS_PORT` in your `.env` file.
+- Set `HIBISCUS_PORT` in your `.env` file to a free port.
 
 **Arm64 / Raspberry Pi issues**
-- Use the pre-built multi-arch image from GHCR — it includes native `linux/arm64` layers.
+- Use the pre-built multi-arch image from GHCR — it includes native `linux/arm64` layers and does not require emulation.
 
 **Health check failing**
-- The server needs ~60 seconds to start. The health check has a `start_period` of 60s.
+- The server needs ~60 seconds to start. The health check has a `start_period` of 60s — give it time before investigating.

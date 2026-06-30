@@ -1,6 +1,28 @@
+# Version control
 .git
 .github
 .gitignore
+
+# Documentation
 *.md
+LICENSE
+
+# Test artefacts
+tests/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+
+# Local secrets and runtime data
+.env
+.env.*
 secrets/
-*.dummy
+data/
+
+# Compose files (not needed in image)
+docker-compose*.yml
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp

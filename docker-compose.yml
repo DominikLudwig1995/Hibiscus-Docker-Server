@@ -10,6 +10,20 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_READ_SEARCH
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-hibiscus} -d ${DB_NAME:-hibiscus}"]
       interval: 10s
@@ -51,6 +65,15 @@ services:
       - ${JAMEICA_DATA_PATH:-./data/jameica}:/home/hibiscus/.jameica:rw
     ports:
       - "${HIBISCUS_PORT:-8888}:8888"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8888/"]
       interval: 30s

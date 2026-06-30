@@ -51,19 +51,22 @@ ARG USERNAME=hibiscus
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
 
 LABEL org.opencontainers.image.title="Hibiscus Server" \
       org.opencontainers.image.description="Dockerized HBCI/FinTS online banking server" \
       org.opencontainers.image.source="https://github.com/DominikLudwig1995/Hibiscus-Docker-Server" \
       org.opencontainers.image.licenses="MIT"
 
-# Ubuntu base images ship an 'ubuntu' user at UID/GID 1000; remove it first
-# so we can claim those IDs for the hibiscus service user.
+# Ubuntu 26.04 ships an 'ubuntu' user at UID/GID 1000; remove it so we can
+# claim those IDs for the hibiscus service user.
 RUN userdel -r ubuntu 2>/dev/null || true && \
     groupdel ubuntu  2>/dev/null || true && \
-    groupadd --gid $USER_GID $USERNAME && \
-    useradd  --uid $USER_UID --gid $USER_GID --create-home --no-log-init $USERNAME
+    groupadd --gid  "$USER_GID" "$USERNAME" && \
+    useradd  --uid  "$USER_UID" --gid "$USER_GID" --create-home --no-log-init "$USERNAME"
 
 RUN apt-get update && \
     apt-get upgrade -y && \

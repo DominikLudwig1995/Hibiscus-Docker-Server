@@ -162,6 +162,9 @@ def render_template(jinja_env: Environment, template_name: str, context: dict) -
         raise click.ClickException(f"Template error in {template_name}: {exc}") from exc
 
 
+_SENSITIVE_FILENAMES = {"pwd"}
+
+
 def write_file(path: Path, content: str, *, dry_run: bool) -> None:
     if dry_run:
         console.print(f"\n[bold cyan]──── {path} (dry-run) ────[/]")
@@ -169,6 +172,8 @@ def write_file(path: Path, content: str, *, dry_run: bool) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
+    if path.name in _SENSITIVE_FILENAMES:
+        path.chmod(0o600)
     console.print(f"  [green]✓[/]  {path}")
 
 

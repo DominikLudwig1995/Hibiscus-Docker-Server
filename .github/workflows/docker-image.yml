@@ -14,6 +14,7 @@ jobs:
   test-provision:
     name: Test Provisioning Script
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -30,6 +31,7 @@ jobs:
   build:
     name: Build & Test Docker Image
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: test-provision
     permissions:
       contents: read
@@ -106,6 +108,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build
     if: github.event_name != 'pull_request'
     permissions:

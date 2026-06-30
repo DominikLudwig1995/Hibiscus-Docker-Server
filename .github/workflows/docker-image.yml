@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner | lower }}/hibiscus
+  IMAGE_NAME: dominikludwig1995/hibiscus
 
 jobs:
   test-provision:

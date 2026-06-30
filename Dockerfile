@@ -2,7 +2,7 @@
 FROM ubuntu:24.04 AS builder
 
 ARG HIBISCUS_VERSION=2.10.7
-ARG MARIADB_CONNECTOR_VERSION=3.4.1
+ARG MARIADB_CONNECTOR_VERSION=3.5.3
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget unzip ca-certificates && \

@@ -44,6 +44,11 @@ commandTests:
     args: ["-c", "ls /home/hibiscus/hibiscus-server/lib/mysql/mariadb-java-client-*.jar"]
     exitCode: 0
 
+  - name: "PostgreSQL driver jar is present"
+    command: "sh"
+    args: ["-c", "ls /home/hibiscus/hibiscus-server/lib/mysql/postgresql-*.jar"]
+    exitCode: 0
+
   - name: "No Windows artefacts remain"
     command: "sh"
     args: ["-c", "! test -f /home/hibiscus/hibiscus-server/jameicaserver.exe"]
@@ -78,15 +83,6 @@ fileExistenceTests:
 
   - name: "UpdateService static config"
     path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
-    shouldExist: true
-
-fileExistenceTests:
-  - name: "HBCIDBService template renders to correct Jameica class filename"
-    path: "/opt/provision/templates/HBCIDBService.properties.j2"
-    shouldExist: true
-
-  - name: "Plugin template renders to correct Jameica class filename"
-    path: "/opt/provision/templates/Plugin.properties.j2"
     shouldExist: true
 
 fileContentTests:

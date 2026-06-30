@@ -24,6 +24,16 @@ commandTests:
     args: ["/opt/provision/provision.py", "--help"]
     exitCode: 0
 
+  - name: "Hibiscus server directory exists"
+    command: "test"
+    args: ["-d", "/home/hibiscus/hibiscus-server"]
+    exitCode: 0
+
+  - name: "Jinja2 templates directory exists"
+    command: "test"
+    args: ["-d", "/opt/provision/templates"]
+    exitCode: 0
+
   - name: "Hibiscus startup script exists and is executable"
     command: "test"
     args: ["-x", "/home/hibiscus/hibiscus-server/jameicaserver.sh"]
@@ -50,19 +60,9 @@ commandTests:
     exitCode: 0
 
 fileExistenceTests:
-  - name: "Hibiscus server directory"
-    path: "/home/hibiscus/hibiscus-server"
-    shouldExist: true
-    isDirectory: true
-
   - name: "Provisioning script"
     path: "/opt/provision/provision.py"
     shouldExist: true
-
-  - name: "Jinja2 templates directory"
-    path: "/opt/provision/templates"
-    shouldExist: true
-    isDirectory: true
 
   - name: "HBCIDBService template"
     path: "/opt/provision/templates/HBCIDBService.properties.j2"

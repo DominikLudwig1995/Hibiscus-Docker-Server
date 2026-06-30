@@ -1,5 +1,23 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["dockerfile"],
+      "automerge": false,
+      "labels": ["dependencies", "docker"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "automerge": true,
+      "labels": ["dependencies", "github-actions"]
+    },
+    {
+      "matchManagers": ["maven"],
+      "automerge": false,
+      "labels": ["dependencies", "java"]
+    }
   ]
 }

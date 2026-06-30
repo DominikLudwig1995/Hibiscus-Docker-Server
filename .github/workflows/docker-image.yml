@@ -15,24 +15,20 @@ jobs:
     name: Test Provisioning Script
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: provision/requirements.txt
 
-      - name: Install dependencies
-        run: pip install -r provision/requirements.txt pytest==9.1.1
+      - run: pip install -r provision/requirements.txt pytest==9.1.1
 
-      - name: Run provisioning tests
-        run: pytest tests/test_provision.py -v
+      - run: pytest tests/test_provision.py -v
 
   build:
-    name: Build Docker Image
+    name: Build & Test Docker Image
     runs-on: ubuntu-latest
     needs: test-provision
     permissions:
@@ -42,14 +38,11 @@ jobs:
       digest: ${{ steps.push.outputs.digest }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-      - name: Set up QEMU (multi-platform support)
-        uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-qemu-action@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -57,7 +50,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Extract Docker metadata
         id: meta
@@ -69,37 +62,44 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
-      - name: Build and push Docker image
+      # Build amd64 only and load into local Docker daemon for structure tests.
+      # GHA cache is populated here and reused by the multi-platform push below.
+      - name: Build image (amd64, local)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: hibiscus:test
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install container-structure-test
+        run: |
+          curl -fsSLO "https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64"
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
+      - name: Run container structure tests
+        run: container-structure-test test --image hibiscus:test --config tests/container-structure-test.yml
+
+      # Multi-platform push — layers already cached from the amd64 build above.
+      - name: Build and push (amd64 + arm64)
         id: push
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # Load single-platform image for structure tests
-      - name: Build local image for structure tests
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          load: true
-          tags: hibiscus:test
-          cache-from: type=gha
-
-      - name: Install container-structure-test
-        run: |
-          curl -LO "https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64"
-          chmod +x container-structure-test-linux-amd64
-          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
-
-      - name: Run container structure tests
-        run: container-structure-test test --image hibiscus:test --config tests/container-structure-test.yml
 
   security-scan:
     name: Security Scan
@@ -112,15 +112,14 @@ jobs:
       security-events: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
@@ -130,7 +129,6 @@ jobs:
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif

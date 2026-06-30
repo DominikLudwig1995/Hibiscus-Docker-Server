@@ -39,11 +39,13 @@ from rich import box
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
-# Maps template filename → output filename (relative to --out)
+# Maps template filename → Jameica output filename (fully-qualified class name).
+# Jameica reads config from $WORKDIR/cfg/<ClassName>.properties — the short names
+# in hibiscus-server/cfg/ are only used as first-boot defaults.
 TEMPLATE_MAP: dict[str, str] = {
-    "HBCIDBService.properties.j2": "HBCIDBService.properties",
-    "PinTanConfig.properties.j2":  "PinTanConfig.properties",
-    "Plugin.properties.j2":        "Plugin.properties",
+    "HBCIDBService.properties.j2": "de.willuhn.jameica.hbci.rmi.HBCIDBService.properties",
+    "PinTanConfig.properties.j2":  "de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties",
+    "Plugin.properties.j2":        "de.willuhn.jameica.webadmin.Plugin.properties",
 }
 
 # Required fields and their descriptions

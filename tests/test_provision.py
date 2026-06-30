@@ -276,8 +276,8 @@ class TestRenderCLI:
         out_dir = tmp_path / "out"
         result = runner.invoke(cli, ["render", "--config", str(cfg_file), "--out", str(out_dir)])
         assert result.exit_code == 0, result.output
-        assert (out_dir / "HBCIDBService.properties").exists()
-        assert (out_dir / "Plugin.properties").exists()
+        assert (out_dir / "de.willuhn.jameica.hbci.rmi.HBCIDBService.properties").exists()
+        assert (out_dir / "de.willuhn.jameica.webadmin.Plugin.properties").exists()
 
     def test_render_dry_run_writes_nothing(self, runner, tmp_path, full_cfg):
         import yaml as _yaml
@@ -304,7 +304,7 @@ class TestRenderCLI:
         with patch.dict(os.environ, env_vars, clear=False):
             result = runner.invoke(cli, ["render", "--from-env", "--out", str(out_dir)])
         assert result.exit_code == 0, result.output
-        assert (out_dir / "HBCIDBService.properties").exists()
+        assert (out_dir / "de.willuhn.jameica.hbci.rmi.HBCIDBService.properties").exists()
 
 
 class TestValidateCLI:

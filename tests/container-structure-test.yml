@@ -80,6 +80,15 @@ fileExistenceTests:
     path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
     shouldExist: true
 
+fileExistenceTests:
+  - name: "HBCIDBService template renders to correct Jameica class filename"
+    path: "/opt/provision/templates/HBCIDBService.properties.j2"
+    shouldExist: true
+
+  - name: "Plugin template renders to correct Jameica class filename"
+    path: "/opt/provision/templates/Plugin.properties.j2"
+    shouldExist: true
+
 fileContentTests:
   - name: "Auto-update is disabled"
     path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"

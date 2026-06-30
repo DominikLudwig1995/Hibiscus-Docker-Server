@@ -9,8 +9,9 @@
 [![Hibiscus](https://img.shields.io/badge/hibiscus--server-2.12.4-green)](https://www.willuhn.de/products/hibiscus-server/)
 [![Ubuntu 26.04](https://img.shields.io/badge/ubuntu-26.04-E95420?logo=ubuntu&logoColor=white)](https://hub.docker.com/_/ubuntu)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-lightgrey)](#building-locally)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Quick Start](#quick-start) · [Configuration](#configuration) · [Provisioning CLI](#provisioning-cli) · [Upgrading](#upgrading) · [Troubleshooting](#troubleshooting) · [Credits](#credits)
+[Quick Start](#quick-start) · [How It Works](#how-it-works) · [Configuration](#configuration) · [Provisioning CLI](#provisioning-cli) · [Upgrading](#upgrading) · [Troubleshooting](#troubleshooting) · [Credits](#credits)
 
 </div>
 
@@ -18,94 +19,139 @@
 
 ## What is this?
 
-[Hibiscus Server](https://www.willuhn.de/products/hibiscus-server/) is an open-source HBCI/FinTS banking server that lets you access your German bank accounts programmatically — fetch transactions, check balances, initiate transfers — without relying on any third-party service. You own the server, you own the data.
+[Hibiscus Server](https://www.willuhn.de/products/hibiscus-server/) is an open-source HBCI/FinTS banking server that gives you programmatic access to your German bank accounts — fetch transactions, check balances, initiate transfers — without relying on any third-party service. You own the server, you own the data.
 
-This repo wraps it in a production-ready Docker image:
+This repo packages it as a production-ready Docker image:
 
-| Feature | Detail |
-|---------|--------|
-| **Zero config files in the image** | All settings are injected at startup from environment variables |
-| **PostgreSQL included** | docker-compose brings up Postgres + Hibiscus in one command |
-| **Multi-arch** | Native `linux/amd64` and `linux/arm64` (Raspberry Pi, Apple Silicon, cloud VMs) |
-| **3-stage build** | Build tools never reach the runtime image — minimal attack surface |
-| **Jinja2 provisioner** | Typed, validated, testable config rendering with a Rich CLI |
-| **Security scanning** | Trivy CVE scan on every release, results in the GitHub Security tab |
-| **Dependabot** | Automatic PRs for base image, Actions, and Python dependency updates |
+| | |
+|---|---|
+| 🔒 **Zero secrets in the image** | All config is provisioned at container startup from environment variables |
+| 🐘 **PostgreSQL included** | `docker compose up` brings up the full stack in one command |
+| 🏗️ **3-stage build** | Build tools never reach the runtime image — minimal attack surface |
+| 🌍 **Multi-arch** | Native `linux/amd64` and `linux/arm64` (Raspberry Pi, Apple Silicon, cloud) |
+| 🧩 **Jinja2 provisioner** | Typed, validated config rendering with a Rich CLI |
+| 🛡️ **Hardened** | Non-root user, `no-new-privileges`, `cap_drop: ALL`, log rotation |
+| 🔍 **Trivy CVE scanning** | Every release scanned, results in GitHub Security tab |
+| 🤖 **Dependabot** | Weekly PRs for base image, Actions, and Python dependency updates |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker + Docker Compose (v2)
-- A German bank account that supports HBCI/FinTS (FinTS 3.0 / PIN/TAN)
-
-### 1 — Get the files
+**Prerequisites:** Docker + Docker Compose v2, a German bank account with HBCI/FinTS (PIN/TAN) support.
 
 ```bash
+# 1. Clone
 git clone https://github.com/DominikLudwig1995/Hibiscus-Docker-Server.git
 cd Hibiscus-Docker-Server
-```
 
-Or just grab the two files you need:
-
-```bash
-curl -O https://raw.githubusercontent.com/DominikLudwig1995/Hibiscus-Docker-Server/main/docker-compose.yml
-curl -O https://raw.githubusercontent.com/DominikLudwig1995/Hibiscus-Docker-Server/main/.env.example
-```
-
-### 2 — Configure
-
-```bash
+# 2. Configure
 cp .env.example .env
-```
+# Edit .env — set HIBISCUS_PASSWORD and DB_PASSWORD
 
-Open `.env` and set the three required values:
-
-```env
-HIBISCUS_PASSWORD=your-hibiscus-master-password
-DB_USERNAME=hibiscus
-DB_PASSWORD=your-postgres-password
-```
-
-> **Security note**: `HIBISCUS_PASSWORD` is the master password that encrypts your banking credentials in Hibiscus. Choose something strong and store it safely — losing it means losing access to your Hibiscus data.
-
-### 3 — Start
-
-```bash
+# 3. Start (PostgreSQL → Hibiscus, in order)
 docker compose up -d
+
+# 4. Open http://localhost:8888
+# Log in with your HIBISCUS_PASSWORD
 ```
 
-This starts PostgreSQL, waits for it to be healthy, then starts Hibiscus and provisions all config files from your `.env`. First start takes ~90 seconds (JVM startup + DB initialisation).
+That's it. First startup takes ~90 seconds (JVM + DB initialisation).
 
-### 4 — Open the web interface
+> **What just happened?** The provisioner read your `.env`, rendered three `.properties` files into the Jameica config directory, then handed off to the Hibiscus JVM. PostgreSQL was ready first (health-checked before Hibiscus starts).
 
+---
+
+## How It Works
+
+### Startup flow
+
+```mermaid
+sequenceDiagram
+    participant DC as Docker Compose
+    participant PG as PostgreSQL
+    participant EP as entrypoint.sh
+    participant PR as provision.py
+    participant HB as Hibiscus JVM
+
+    DC->>PG: start postgres:17-alpine
+    PG-->>DC: healthy (pg_isready)
+    DC->>EP: start hibiscus container
+    EP->>PR: render --from-env
+    PR->>PR: validate required env vars
+    PR->>PR: render Jinja2 templates
+    PR-->>EP: write *.properties to ~/.jameica/cfg/
+    EP->>EP: chmod 600 pwd file
+    EP->>HB: exec jameicaserver.sh -w pwd
+    HB->>PG: JDBC connect (postgresql://postgres:5432/hibiscus)
+    HB-->>DC: healthy (wget http://localhost:8888/)
 ```
-http://localhost:8888
+
+### Docker image — 3-stage build
+
+```mermaid
+flowchart LR
+    subgraph S1["Stage 1 · hibiscus-fetch"]
+        A1["ubuntu:26.04\nwget + unzip"]
+        A2["Download Hibiscus .zip\nRemove Windows artefacts"]
+        A3["Download MariaDB jar\nDownload PostgreSQL jar"]
+        A1 --> A2 --> A3
+    end
+
+    subgraph S2["Stage 2 · python-venv"]
+        B1["ubuntu:26.04\npython3-venv"]
+        B2["pip install\nclick jinja2 pyyaml rich"]
+        B1 --> B2
+    end
+
+    subgraph S3["Stage 3 · runtime (final image)"]
+        C1["ubuntu:26.04\nJRE-headless + python3"]
+        C2["hibiscus user UID/GID 1000\nno build tools, no pip"]
+        C3["ENTRYPOINT /entrypoint.sh"]
+        C1 --> C2 --> C3
+    end
+
+    A3 -- "COPY hibiscus-server/" --> S3
+    B2 -- "COPY /opt/venv" --> S3
 ```
 
-Log in with the Hibiscus master password you set in step 2.
+### CI/CD pipeline
 
-### 5 — Check it's running
+```mermaid
+flowchart LR
+    tag["git tag v*.*.*\ngit push origin tag"]
 
-```bash
-docker compose ps           # both services should show "healthy"
-docker logs hibiscus        # provisioner output + Hibiscus startup log
+    subgraph CI["GitHub Actions"]
+        T["test-provision\npytest 33 tests\n⏱ ~10s"]
+        B["build & test\namd64 build → CST\narm64 build → push\n⏱ ~7 min"]
+        S["security-scan\nTrivy CVE → SARIF\n→ GitHub Security tab"]
+
+        T --> B --> S
+    end
+
+    subgraph GHCR["ghcr.io/dominikludwig1995/hibiscus"]
+        T1[":latest"]
+        T2[":2.12.4"]
+        T3[":2.12"]
+        T4[":2"]
+    end
+
+    tag --> CI
+    B --> GHCR
 ```
 
 ---
 
 ## Configuration
 
-All config lives in a single `.env` file. Credentials are shared between `postgres` and `hibiscus` — no duplication, no separate secret files.
+All config lives in `.env`. Copy `.env.example` → `.env` and fill in the required values.
 
 ### Required
 
 | Variable | Description |
 |----------|-------------|
-| `HIBISCUS_PASSWORD` | Hibiscus master password — encrypts your banking keystore |
-| `DB_PASSWORD` | PostgreSQL password (shared between the two services) |
+| `HIBISCUS_PASSWORD` | Master password that unlocks the Hibiscus keystore. **Store this safely — losing it means losing access to your data.** |
+| `DB_PASSWORD` | PostgreSQL password, shared between `postgres` and `hibiscus` services |
 | `DB_USERNAME` | PostgreSQL username (default: `hibiscus`) |
 
 ### Optional
@@ -113,23 +159,21 @@ All config lives in a single `.env` file. Credentials are shared between `postgr
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DB_NAME` | `hibiscus` | PostgreSQL database name |
-| `HIBISCUS_PORT` | `8888` | Host port the web interface is exposed on |
-| `HIBISCUS_HTTP_AUTH` | `true` | Enable HTTP basic auth on the web interface |
-| `HIBISCUS_HTTP_SSL` | `true` | Enable SSL on the web interface |
-| `JAMEICA_DATA_PATH` | `./data/jameica` | Host path for persistent Jameica data (bank accounts, keys, history) |
+| `HIBISCUS_PORT` | `8888` | Host port for the web interface |
+| `HIBISCUS_HTTP_AUTH` | `true` | HTTP basic auth on the web interface |
+| `HIBISCUS_HTTP_SSL` | `true` | SSL on the web interface |
+| `JAMEICA_DATA_PATH` | `./data/jameica` | Host path for persistent Jameica data (keys, history, lock file) |
 | `HIBISCUS_IMAGE` | `ghcr.io/dominikludwig1995/hibiscus:2.12.4` | Override to use a locally built image |
 
-### Build args (only when running `docker compose build`)
+### Build args (only needed for `docker compose build`)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HIBISCUS_VERSION` | `2.12.4` | Hibiscus Server version to download |
+| `HIBISCUS_VERSION` | `2.12.4` | Hibiscus version to download |
 | `MARIADB_CONNECTOR_VERSION` | `3.5.3` | MariaDB JDBC connector version |
 | `POSTGRES_DRIVER_VERSION` | `42.7.7` | PostgreSQL JDBC driver version |
 
-### Advanced Hibiscus variables
-
-These are set automatically by the compose file but can be overridden for custom setups:
+### Advanced Hibiscus env vars (set automatically by compose, override if needed)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -142,73 +186,50 @@ These are set automatically by the compose file but can be overridden for custom
 
 ## Provisioning CLI
 
-At container startup, the provisioner reads your environment variables and renders the Hibiscus `.properties` files using Jinja2 templates. You can also run it locally for validation and debugging.
+At container startup, `provision.py` reads environment variables and renders three Jinja2 templates into the Jameica config directory (`~/.jameica/cfg/`). You can also run it locally.
 
-### Run locally
+### Templates rendered at startup
+
+| Template | Jameica config file | Controls |
+|----------|---------------------|---------|
+| `HBCIDBService.properties.j2` | `de.willuhn.jameica.hbci.rmi.HBCIDBService.properties` | DB driver, JDBC URL, credentials |
+| `Plugin.properties.j2` | `de.willuhn.jameica.webadmin.Plugin.properties` | Web interface port, auth, SSL |
+| `PinTanConfig.properties.j2` | `de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties` | PIN/TAN bank account entries |
+
+### Local usage
 
 ```bash
 cd provision
 pip install -r requirements.txt
 
-# Validate config before deploying
-HIBISCUS_PASSWORD=secret \
-HIBISCUS_DB_USERNAME=hibiscus \
-HIBISCUS_DB_PASSWORD=dbpass \
+# Validate before deploying — catches missing required fields early
+HIBISCUS_PASSWORD=secret HIBISCUS_DB_USERNAME=hibiscus HIBISCUS_DB_PASSWORD=pass \
   python provision.py validate --from-env
 
-# Preview what would be written (nothing is touched)
-HIBISCUS_PASSWORD=secret \
-HIBISCUS_DB_USERNAME=hibiscus \
-HIBISCUS_DB_PASSWORD=dbpass \
+# Preview rendered output (nothing written to disk)
+HIBISCUS_PASSWORD=secret HIBISCUS_DB_USERNAME=hibiscus HIBISCUS_DB_PASSWORD=pass \
   python provision.py render --from-env --dry-run
 
-# Show resolved config with secrets masked
-python provision.py show --config config.example.yml
+# Write to a local directory
+python provision.py render --config provision/config.example.yml --out ./out
+
+# Show resolved config (secrets masked)
+python provision.py show --config provision/config.example.yml
 ```
-
-### Using a config file instead of env vars
-
-```yaml
-# config.yml
-hibiscus_password: "your-master-password"
-db_username: hibiscus
-db_password: "your-db-password"
-db_host: postgres
-db_type: postgresql
-
-accounts:
-  - name: mybank
-    server: hbci.mybank.de
-    blz: "12345678"
-    userid: myuserid
-    hbciversion: "300"
-```
-
-```bash
-python provision.py render --config config.yml --out /tmp/cfg
-```
-
-### Rendered files
-
-| Template | Output file | Controls |
-|----------|-------------|---------|
-| `HBCIDBService.properties.j2` | `HBCIDBService.properties` | DB driver, JDBC URL, credentials |
-| `Plugin.properties.j2` | `Plugin.properties` | Web interface port, auth, SSL |
-| `PinTanConfig.properties.j2` | `PinTanConfig.properties` | PIN/TAN bank account entries |
 
 ### Adding bank accounts
 
-Mount a YAML file and point `HIBISCUS_ACCOUNTS_FILE` at it:
+Create `accounts.yml` and mount it into the container:
 
 ```yaml
 # accounts.yml
 - name: mybank
   server: hbci.mybank.de
-  blz: "12345678"          # BLZ (bank code)
+  blz: "12345678"
   userid: myuserid
-  customerid: myuserid     # optional, defaults to userid
-  hbciversion: "300"       # optional, default "300"
-  port: 443                # optional, default 443
+  customerid: myuserid   # optional — defaults to userid
+  hbciversion: "300"     # optional
+  port: 443              # optional — default 443
 ```
 
 ```yaml
@@ -226,53 +247,17 @@ services:
 ## Building Locally
 
 ```bash
-# Build with defaults
+# Build with defaults (uses versions from .env or Dockerfile ARGs)
 docker compose build
 
 # Build a specific Hibiscus version
 HIBISCUS_VERSION=2.12.4 docker compose build
 
-# Use the locally built image instead of pulling from GHCR
-HIBISCUS_IMAGE=hibiscus-docker-server-hibiscus docker compose up -d
+# Use the locally built image
+HIBISCUS_IMAGE=ghcr.io/dominikludwig1995/hibiscus:2.12.4 docker compose up -d
 
 # Multi-platform build with Buildx (outside compose)
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t hibiscus:local .
-```
-
----
-
-## How It Works
-
-```
-GitHub Actions (on git tag v*.*.*)
-─────────────────────────────────────────────────────
-  test-provision          build                security-scan
-  ──────────────   ──────────────────────   ──────────────────
-  pytest (33 tests) → amd64 build + CST  →  Trivy → SARIF
-                    → arm64 build + push
-                          │
-                          ▼
-              ghcr.io/dominikludwig1995/hibiscus
-              :2.12.4  :2.12  :2
-
-
-Docker image — 3-stage build
-──────────────────────────────────────────────────────
-  hibiscus-fetch          python-venv           runtime
-  ─────────────────   ──────────────────   ──────────────────
-  wget Hibiscus zip   pip install into     JRE-headless +
-  wget MariaDB jar    /opt/venv            python3 only
-  wget PG driver                           (no build tools)
-          │                  │                    │
-          └──────────────────┴────────────────────┘
-                                  │
-                             ENTRYPOINT
-                          1. provision render --from-env
-                             → writes .properties files
-                          2. exec jameicaserver.sh
-                             (PID 1, signals forwarded)
+docker buildx build --platform linux/amd64,linux/arm64 -t hibiscus:local .
 ```
 
 ---
@@ -281,8 +266,8 @@ Docker image — 3-stage build
 
 ### Upgrading Hibiscus
 
-1. Check the [Hibiscus Server download page](https://www.willuhn.de/products/hibiscus-server/download.php) for the latest version
-2. Update `HIBISCUS_VERSION` in your `.env` (for local builds) or wait for a new release tag here
+1. Check the [Hibiscus download page](https://www.willuhn.de/products/hibiscus-server/download.php) for the latest version
+2. Set `HIBISCUS_VERSION=<new>` in `.env`
 3. Rebuild and restart:
 
 ```bash
@@ -293,28 +278,28 @@ docker compose up -d
 ### Upgrading PostgreSQL
 
 ```bash
-# Stop the stack first — never upgrade Postgres with Hibiscus running
+# Stop the stack first
 docker compose down
 
-# Pull the new Postgres image
+# Pull the new image
 docker compose pull postgres
 
-# Start — Postgres auto-upgrades the data directory if needed
+# Restart — Postgres handles minor version upgrades automatically
 docker compose up -d
 ```
 
-> **Warning**: Major PostgreSQL version upgrades (e.g., 16 → 17) require a data migration. Back up `./data/` first.
+> ⚠️ **Major version upgrades** (e.g. 16 → 17) require a data migration. Back up `./data/` first and follow the [PostgreSQL upgrade guide](https://www.postgresql.org/docs/current/upgrading.html).
 
 ---
 
-## Backup
+## Backup & Restore
 
 Your data lives in two places:
 
 | What | Where | Contains |
 |------|-------|---------|
-| Jameica data | `JAMEICA_DATA_PATH` (default `./data/jameica`) | Banking keys, PIN/TAN accounts, plugin config |
-| Database | Docker volume `postgres-data` | Transactions, account history, Hibiscus data |
+| Jameica workdir | `JAMEICA_DATA_PATH` (default `./data/jameica`) | Keystore, plugin config, lock file |
+| Database | Docker volume `postgres-data` | Transactions, account history |
 
 ```bash
 # Back up the database
@@ -322,11 +307,7 @@ docker exec hibiscus-db pg_dump -U hibiscus hibiscus > hibiscus-$(date +%Y%m%d).
 
 # Back up Jameica data
 tar czf jameica-$(date +%Y%m%d).tar.gz ./data/jameica
-```
 
-Restore:
-
-```bash
 # Restore database
 docker exec -i hibiscus-db psql -U hibiscus hibiscus < hibiscus-20250101.sql
 
@@ -338,25 +319,25 @@ tar xzf jameica-20250101.tar.gz
 
 ## Testing
 
-### Unit tests
+### Unit tests (33 tests)
 
 ```bash
 pip install -r provision/requirements.txt pytest
 pytest tests/test_provision.py -v
 ```
 
-33 tests covering: config loading from file and env, `_FILE` secret convention, all three Jinja2 templates, validation, and the full CLI (`render` / `validate` / `show`).
+Covers: config loading from file and env, `_FILE` secret convention, all three Jinja2 templates, validation, and the full CLI (`render` / `validate` / `show`).
 
 ### Container structure tests
 
 ```bash
 docker build -t hibiscus:test .
-container-structure-test test \
-  --image hibiscus:test \
-  --config tests/container-structure-test.yml
+container-structure-test test --image hibiscus:test --config tests/container-structure-test.yml
 ```
 
 Checks: Java + Python available, provisioner importable, all templates present, port 8888 exposed, no Windows artefacts, `update.check=false`.
+
+Both suites run automatically in CI — provisioning tests gate the Docker build.
 
 ---
 
@@ -368,65 +349,69 @@ Checks: Java + Python available, provisioner importable, all templates present, 
 docker logs hibiscus
 ```
 
-The provisioner prints exactly which required env vars are missing before it exits. Check that `HIBISCUS_PASSWORD`, `DB_PASSWORD`, and `DB_USERNAME` are all set in `.env`.
+The provisioner prints exactly which required env vars are missing before exiting. Check that `HIBISCUS_PASSWORD`, `DB_PASSWORD`, and `DB_USERNAME` are set in `.env`.
 
-### Web interface unreachable
+### Web interface unreachable after startup
 
 ```bash
-docker compose ps           # is hibiscus "healthy"?
-docker logs hibiscus        # look for "Server started" near the bottom
+docker compose ps          # hibiscus should show "healthy"
+docker logs hibiscus       # look for "started webserver at port 8888" near the end
 ```
 
-The JVM takes up to 90 seconds to start. The health check `start_period` is set to 90s — wait before investigating. If it never becomes healthy, the logs will show why.
+The JVM takes up to 90 seconds to start. The health check `start_period` is 90s — wait before investigating.
+
+### Database connection refused
+
+```bash
+docker logs hibiscus | grep -i "jdbc\|connect\|driver"
+```
+
+The JDBC URL should contain `postgresql://postgres:5432/`. If it shows `mariadb://localhost:3306/`, the Jameica workdir contains stale config from a previous run. Fix:
+
+```bash
+docker compose down
+rm -rf ./data/jameica     # removes stale Jameica config
+docker compose up -d
+```
 
 ### Port already in use
 
 ```bash
-# Use a different host port
 echo "HIBISCUS_PORT=8889" >> .env
 docker compose up -d
 ```
 
-### Database connection refused
-
-Hibiscus waits for Postgres to pass its health check before starting (`depends_on: condition: service_healthy`). If Postgres is slow to start, Hibiscus waits automatically. Check Postgres logs if it never becomes healthy:
+### Full reset (start from scratch)
 
 ```bash
-docker logs hibiscus-db
-```
-
-### arm64 / Raspberry Pi issues
-
-Use the GHCR image — it ships native `linux/arm64` layers (no QEMU emulation). If you're building locally on a Raspberry Pi, the build will take longer but produces a native image.
-
-### Reset everything
-
-```bash
-docker compose down -v       # removes containers AND the postgres-data volume
-rm -rf ./data/jameica        # removes Jameica data (irreversible!)
-docker compose up -d         # fresh start
+docker compose down -v    # removes containers + postgres-data volume
+rm -rf ./data/            # removes Jameica workdir
+docker compose up -d      # fresh start
 ```
 
 ---
 
 ## Security
 
-- **No secrets in the image** — all sensitive values are injected at runtime via env vars
+- **No secrets in the image** — all sensitive values injected at runtime via env vars
 - **Non-root container** — runs as `hibiscus` (UID 1000)
-- **Trivy CVE scanning** — runs on every release; results in the [Security tab](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/security/code-scanning)
-- **Dependabot** — weekly PRs for Ubuntu base image, GitHub Actions, and Python dependencies
-- **Mend/WhiteSource SCA** — configured via `.whitesource` for additional supply-chain scanning
-- **Update checks disabled** — `update.check=false` is set in `UpdateService.properties`; updates are handled by rebuilding the image
+- **Password file** — written with `chmod 600`, stored outside the webadmin-served directory
+- **`no-new-privileges:true`** — prevents privilege escalation via setuid/setgid bits
+- **`cap_drop: ALL`** — all Linux capabilities dropped; Postgres gets back only what it needs
+- **Log rotation** — json-file driver, max 10 MB / 3 files per service
+- **Trivy CVE scanning** — every release; results in the [Security tab](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/security/code-scanning)
+- **Dependabot** — weekly PRs for Ubuntu base image, GitHub Actions, Python deps
+- **Update checks disabled** — `update.check=false` in `UpdateService.properties`; updates handled by rebuilding the image
 
 ---
 
 ## Credits
 
-This project would not exist without the work of the Hibiscus and Jameica maintainers.
+This project stands on the shoulders of the Hibiscus and Jameica maintainers.
 
 - **Hibiscus Server** — [willuhn.de/products/hibiscus-server](https://www.willuhn.de/products/hibiscus-server/)
 - **Hibiscus source code** — [github.com/willuhn-open-projects/hibiscus](https://github.com/willuhn-open-projects/hibiscus)
-- **Jameica** (the plugin runtime Hibiscus runs on) — [willuhn.de/products/jameica](https://www.willuhn.de/products/jameica/)
+- **Jameica** (the plugin runtime) — [willuhn.de/products/jameica](https://www.willuhn.de/products/jameica/)
 
 Thank you for building and maintaining open-source banking software that puts users in control of their own financial data.
 

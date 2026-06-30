@@ -10,7 +10,7 @@
 [![Hibiscus](https://img.shields.io/badge/hibiscus--server-2.12.4-green)](https://www.willuhn.de/products/hibiscus-server/)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-lightgrey)](#image-tags)
 
-[**Pull the image**](#quick-start) · [**Image tags**](#image-tags) · [**Configuration**](#configuration) · [**Provisioning**](#provisioning-cli)
+[**Pull the image**](#quick-start) · [**Configuration**](#configuration) · [**Provisioning**](#provisioning-cli)
 
 </div>
 
@@ -35,7 +35,7 @@ This project packages it as a production-ready Docker image with:
 
 ```bash
 # 1. Pull the image
-docker pull ghcr.io/dominikludwig1995/hibiscus:main
+docker pull ghcr.io/dominikludwig1995/hibiscus:2.12.4
 
 # 2. Configure
 cp .env.example .env
@@ -86,27 +86,6 @@ Docker image — 3-stage build
          │     --from-env       │
          │  2. exec hibiscus    │  ← PID 1, signals forwarded
          └──────────────────────┘
-```
-
----
-
-## Image Tags
-
-Images are published to **`ghcr.io/dominikludwig1995/hibiscus`**.
-
-| Tag | Stability | Use case |
-|-----|-----------|----------|
-| `main` | Mutable | Latest passing build from `main` |
-| `sha-<commit>` | **Immutable** | Pin this in production |
-| `v2.12.4` | **Immutable** | Semver release tag |
-| `2.12` / `2` | Mutable alias | Minor / major version tracking |
-
-```bash
-# Always pin to an immutable tag in production
-docker pull ghcr.io/dominikludwig1995/hibiscus:sha-7effa6b
-
-# Or use the branch tag for non-critical environments
-docker pull ghcr.io/dominikludwig1995/hibiscus:main
 ```
 
 ---

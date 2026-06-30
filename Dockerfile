@@ -1,10 +1,9 @@
 # ── Stage 1: hibiscus-fetch ───────────────────────────────────────────────────
-# Downloads and prepares the Hibiscus server distribution.
-# Nothing from this stage leaks into the final image except the app directory.
 FROM ubuntu:26.04 AS hibiscus-fetch
 
 ARG HIBISCUS_VERSION=2.12.4
 ARG MARIADB_CONNECTOR_VERSION=3.5.3
+ARG POSTGRES_DRIVER_VERSION=42.7.7
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,14 +20,16 @@ RUN wget -q \
     rm hibiscus.zip && \
     rm -f hibiscus-server/jameicaserver.exe hibiscus-server/jameica-win32.jar
 
+# Replace bundled MySQL jars with MariaDB + PostgreSQL JDBC drivers
 RUN rm -f hibiscus-server/lib/mysql/* && \
     wget -q \
         "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
+        -P hibiscus-server/lib/mysql/ && \
+    wget -q \
+        "https://repo1.maven.org/maven2/org/postgresql/postgresql/${POSTGRES_DRIVER_VERSION}/postgresql-${POSTGRES_DRIVER_VERSION}.jar" \
         -P hibiscus-server/lib/mysql/
 
 # ── Stage 2: python-venv ──────────────────────────────────────────────────────
-# Builds an isolated Python venv with provisioning dependencies.
-# Isolating pip work here means no pip/wheel/setuptools in the final image.
 FROM ubuntu:26.04 AS python-venv
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -64,7 +65,6 @@ RUN userdel -r ubuntu 2>/dev/null || true && \
     groupadd --gid $USER_GID $USERNAME && \
     useradd  --uid $USER_UID --gid $USER_GID --create-home --no-log-init $USERNAME
 
-# Runtime packages only — no build or download tooling
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
@@ -74,21 +74,13 @@ RUN apt-get update && \
         ca-certificates && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Provisioning venv (no pip, no wheel, no setuptools)
 COPY --from=python-venv /opt/venv /opt/venv
-
-# Provisioning scripts and templates
 COPY --chown=$USERNAME:$USERNAME provision/ /opt/provision/
-
-# Hibiscus application
 COPY --from=hibiscus-fetch --chown=$USERNAME:$USERNAME /build/hibiscus-server \
     /home/$USERNAME/hibiscus-server
-
-# Static non-secret config (auto-update disabled — updates are handled via image rebuilds)
 COPY --chown=$USERNAME:$USERNAME files/UpdateService.properties \
     /home/$USERNAME/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties
 
-# Container entrypoint: provisions secrets then starts Hibiscus
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
               /home/$USERNAME/hibiscus-server/jameicaserver.sh

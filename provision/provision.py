@@ -94,8 +94,10 @@ def config_from_env() -> dict[str, Any]:
         "http_auth": _bool_env("HIBISCUS_HTTP_AUTH", True),
         "http_ssl":  _bool_env("HIBISCUS_HTTP_SSL", True),
         # Database
-        "db_host":     os.environ.get("HIBISCUS_DB_HOST", "127.0.0.1"),
-        "db_port":     int(os.environ.get("HIBISCUS_DB_PORT", "3306")),
+        "db_type":     os.environ.get("HIBISCUS_DB_TYPE", "postgresql"),
+        "db_host":     os.environ.get("HIBISCUS_DB_HOST", "postgres"),
+        "db_port":     int(os.environ.get("HIBISCUS_DB_PORT",
+                           "5432" if os.environ.get("HIBISCUS_DB_TYPE", "postgresql") == "postgresql" else "3306")),
         "db_name":     os.environ.get("HIBISCUS_DB_NAME", "hibiscus"),
         "db_username": _read_secret(
             os.environ.get("HIBISCUS_DB_USERNAME"),

@@ -15,12 +15,14 @@ http_port: 8888
 http_auth: true
 http_ssl: true
 
-# Database connection
-db_host: "127.0.0.1"
-db_port: 3306
+# Database — postgresql (default) or mysql
+db_type: "postgresql"
+db_host: "postgres"
+db_port: 5432
 db_name: "hibiscus"
 db_username: "hibiscus"
 db_password: "changeme"
+# db_driver: "de.willuhn.jameica.hbci.server.DBSupportMySqlImpl"  # default
 
 # Bank accounts for PIN/TAN (one entry per account).
 # In Docker deployments, mount this list via HIBISCUS_ACCOUNTS_FILE.

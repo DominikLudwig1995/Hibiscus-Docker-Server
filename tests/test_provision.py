@@ -126,8 +126,8 @@ class TestConfigFromEnv:
                  if not k.startswith("HIBISCUS_")}
         with patch.dict(os.environ, clean, clear=True):
             cfg = config_from_env()
-        assert cfg["db_host"] == "127.0.0.1"
-        assert cfg["db_port"] == 3306
+        assert cfg["db_host"] == "postgres"
+        assert cfg["db_port"] == 5432
         assert cfg["http_port"] == 8888
         assert cfg["http_auth"] is True
 
@@ -180,15 +180,22 @@ class TestValidateConfig:
 # ── templates ─────────────────────────────────────────────────────────────────
 
 class TestHBCIDBTemplate:
-    def test_renders_with_defaults(self, jinja_env, minimal_cfg):
+    def test_postgresql_default(self, jinja_env, minimal_cfg):
         out = render_template(jinja_env, "HBCIDBService.properties.j2", minimal_cfg)
-        assert "127.0.0.1" in out
-        assert "3306" in out
-        assert "hibiscus" in out
+        assert r"jdbc\:postgresql\://" in out
+        assert "5432" in out
 
-    def test_renders_custom_host(self, jinja_env, full_cfg):
+    def test_postgresql_custom_host(self, jinja_env, full_cfg):
+        full_cfg["db_type"] = "postgresql"
         out = render_template(jinja_env, "HBCIDBService.properties.j2", full_cfg)
         assert "db.internal" in out
+        assert r"jdbc\:postgresql\://" in out
+
+    def test_mysql_url_format(self, jinja_env, minimal_cfg):
+        minimal_cfg["db_type"] = "mysql"
+        out = render_template(jinja_env, "HBCIDBService.properties.j2", minimal_cfg)
+        assert r"jdbc\:mysql\://" in out
+        assert "useUnicode" in out
 
     def test_raises_on_missing_field(self, jinja_env):
         import click

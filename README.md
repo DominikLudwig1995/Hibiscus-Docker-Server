@@ -37,24 +37,17 @@ This project packages it as a production-ready Docker image with:
 # 1. Pull the image
 docker pull ghcr.io/dominikludwig1995/hibiscus:main
 
-# 2. Create secret files (one value per file)
-mkdir -p secrets
-echo "your-master-password" > secrets/hibiscus_password
-echo "db_user"              > secrets/db_username
-echo "db_pass"              > secrets/db_password
+# 2. Configure
+cp .env.example .env
+$EDITOR .env          # set HIBISCUS_PASSWORD and DB_PASSWORD
 
-# 3. Start
-SECRETS_PATH=./secrets docker compose up -d
+# 3. Start (Postgres + Hibiscus)
+docker compose up -d
 
 # 4. Open http://localhost:8888
 ```
 
-> **First time?** Copy the dummy secrets for a local smoke-test:
-> ```bash
-> cp secrets/HBCIDBService.properties.dummy secrets/HBCIDBService.properties
-> cp secrets/PinTanConfig.properties.dummy  secrets/PinTanConfig.properties
-> cp secrets/pwd.dummy                      secrets/pwd
-> ```
+That's it — no secret files, no manual config editing. The stack brings up PostgreSQL, waits for it to be healthy, then starts Hibiscus and provisions all `.properties` files from the env vars in `.env`.
 
 ---
 
@@ -122,47 +115,31 @@ docker pull ghcr.io/dominikludwig1995/hibiscus:main
 
 ### Environment Variables
 
-#### Required
+All config lives in a single `.env` file (see `.env.example`). Credentials are shared between the `postgres` and `hibiscus` services — no duplication, no separate secret files needed.
 
-| Variable | `_FILE` variant | Description |
-|---|---|---|
-| `HIBISCUS_PASSWORD` | `HIBISCUS_PASSWORD_FILE` | Hibiscus master password (unlocks keystore) |
-| `HIBISCUS_DB_USERNAME` | `HIBISCUS_DB_USERNAME_FILE` | Database username |
-| `HIBISCUS_DB_PASSWORD` | `HIBISCUS_DB_PASSWORD_FILE` | Database password |
-
-#### Optional
+#### `.env` reference
 
 | Variable | Default | Description |
 |---|---|---|
-| `HIBISCUS_DB_HOST` | `127.0.0.1` | Database host |
-| `HIBISCUS_DB_PORT` | `3306` | Database port |
-| `HIBISCUS_DB_NAME` | `hibiscus` | Database name |
-| `HIBISCUS_HTTP_PORT` | `8888` | Web interface port |
+| `HIBISCUS_PASSWORD` | **required** | Hibiscus master password |
+| `DB_PASSWORD` | **required** | PostgreSQL + Hibiscus DB password (shared) |
+| `DB_USERNAME` | `hibiscus` | PostgreSQL + Hibiscus DB username (shared) |
+| `DB_NAME` | `hibiscus` | Database name |
+| `HIBISCUS_PORT` | `8888` | Host port for the web interface |
 | `HIBISCUS_HTTP_AUTH` | `true` | Enable HTTP basic auth |
 | `HIBISCUS_HTTP_SSL` | `true` | Enable SSL |
-| `HIBISCUS_ACCOUNTS_FILE` | — | Path to YAML file with bank account entries |
+| `JAMEICA_DATA_PATH` | `./data/jameica` | Host path for persistent Jameica data |
 
-#### `_FILE` convention (Docker secrets)
+#### Advanced Hibiscus env vars
 
-Every secret variable supports a `_FILE` variant that reads from a mounted file — the standard Docker secrets pattern:
+These are set automatically by the compose file but can be overridden:
 
-```yaml
-environment:
-  HIBISCUS_PASSWORD_FILE: /run/secrets/hibiscus_password
-secrets:
-  - hibiscus_password
-```
-
-### Example `.env`
-
-```env
-SECRETS_PATH=/opt/hibiscus/secrets
-JAMEICA_DATA_PATH=/opt/hibiscus/data
-HIBISCUS_PORT=8888
-HIBISCUS_DB_HOST=mariadb
-HIBISCUS_DB_PORT=3306
-HIBISCUS_DB_NAME=hibiscus
-```
+| Variable | Default | Description |
+|---|---|---|
+| `HIBISCUS_DB_TYPE` | `postgresql` | `postgresql` or `mysql` |
+| `HIBISCUS_DB_HOST` | `postgres` | Database host |
+| `HIBISCUS_DB_PORT` | `5432` | Database port |
+| `HIBISCUS_ACCOUNTS_FILE` | — | Path to YAML with bank account entries |
 
 ---
 

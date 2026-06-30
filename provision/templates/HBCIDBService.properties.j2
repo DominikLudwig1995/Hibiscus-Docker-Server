@@ -1,4 +1,10 @@
+{% set _type = db_type | default("postgresql") %}
+{% if _type == "postgresql" %}
+database.driver={{ db_driver | default("de.willuhn.jameica.hbci.server.DBSupportMySqlImpl") }}
+database.driver.mysql.jdbcurl=jdbc\:postgresql\://{{ db_host | default("postgres") }}\:{{ db_port | default(5432) }}/{{ db_name | default("hibiscus") }}
+{% else %}
 database.driver={{ db_driver | default("de.willuhn.jameica.hbci.server.DBSupportMySqlImpl") }}
 database.driver.mysql.jdbcurl=jdbc\:mysql\://{{ db_host | default("127.0.0.1") }}\:{{ db_port | default(3306) }}/{{ db_name | default("hibiscus") }}?useUnicode\=Yes&characterEncoding\=ISO8859_1
+{% endif %}
 database.driver.mysql.username={{ db_username }}
 database.driver.mysql.password={{ db_password }}

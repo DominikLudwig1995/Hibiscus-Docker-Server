@@ -1,4 +1,22 @@
 services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: hibiscus-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-hibiscus}
+      POSTGRES_USER:     ${DB_USERNAME:-hibiscus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-hibiscus} -d ${DB_NAME:-hibiscus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   hibiscus:
     image: ghcr.io/dominikludwig1995/hibiscus:main
     container_name: hibiscus
@@ -7,27 +25,27 @@ services:
       context: .
       args:
         HIBISCUS_VERSION: "2.12.4"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      # Database connection
-      HIBISCUS_DB_HOST:     ${HIBISCUS_DB_HOST:-127.0.0.1}
-      HIBISCUS_DB_PORT:     ${HIBISCUS_DB_PORT:-3306}
-      HIBISCUS_DB_NAME:     ${HIBISCUS_DB_NAME:-hibiscus}
-      # Secrets — prefer *_FILE variants for Docker secrets / mounted files
-      HIBISCUS_DB_USERNAME_FILE:  /run/secrets/db_username
-      HIBISCUS_DB_PASSWORD_FILE:  /run/secrets/db_password
-      HIBISCUS_PASSWORD_FILE:     /run/secrets/hibiscus_password
+      # Master password (required)
+      HIBISCUS_PASSWORD:        ${HIBISCUS_PASSWORD:?HIBISCUS_PASSWORD must be set in .env}
+      # Database — points at the postgres service above
+      HIBISCUS_DB_TYPE:         postgresql
+      HIBISCUS_DB_HOST:         postgres
+      HIBISCUS_DB_PORT:         5432
+      HIBISCUS_DB_NAME:         ${DB_NAME:-hibiscus}
+      HIBISCUS_DB_USERNAME:     ${DB_USERNAME:-hibiscus}
+      HIBISCUS_DB_PASSWORD:     ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       # Web interface
-      HIBISCUS_HTTP_PORT:   ${HIBISCUS_HTTP_PORT:-8888}
-      HIBISCUS_HTTP_AUTH:   ${HIBISCUS_HTTP_AUTH:-true}
-      HIBISCUS_HTTP_SSL:    ${HIBISCUS_HTTP_SSL:-true}
-      # Optional: path to a YAML file with bank account entries
-      # HIBISCUS_ACCOUNTS_FILE: /run/secrets/accounts.yml
-    secrets:
-      - db_username
-      - db_password
-      - hibiscus_password
+      HIBISCUS_HTTP_PORT:       ${HIBISCUS_HTTP_PORT:-8888}
+      HIBISCUS_HTTP_AUTH:       ${HIBISCUS_HTTP_AUTH:-true}
+      HIBISCUS_HTTP_SSL:        ${HIBISCUS_HTTP_SSL:-true}
+      # Optional: mount a YAML file with bank account entries
+      # HIBISCUS_ACCOUNTS_FILE: /run/accounts.yml
     volumes:
-      - ${JAMEICA_DATA_PATH:-/opt/hibiscus/data}:/home/hibiscus/.jameica:rw
+      - ${JAMEICA_DATA_PATH:-./data/jameica}:/home/hibiscus/.jameica:rw
     ports:
       - "${HIBISCUS_PORT:-8888}:8888"
     healthcheck:
@@ -37,10 +55,5 @@ services:
       retries: 3
       start_period: 90s
 
-secrets:
-  db_username:
-    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/db_username
-  db_password:
-    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/db_password
-  hibiscus_password:
-    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/hibiscus_password
+volumes:
+  postgres-data:

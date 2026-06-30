@@ -88,3 +88,7 @@ __pycache__/
 secrets/*.properties
 secrets/pwd
 provision/config.yml
+
+# Local environment
+.env
+data/

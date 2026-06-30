@@ -1,5 +1,7 @@
-# ── Stage 1: builder ──────────────────────────────────────────────────────────
-FROM ubuntu:24.04 AS builder
+# ── Stage 1: hibiscus-fetch ───────────────────────────────────────────────────
+# Downloads and prepares the Hibiscus server distribution.
+# Nothing from this stage leaks into the final image except the app directory.
+FROM ubuntu:24.04 AS hibiscus-fetch
 
 ARG HIBISCUS_VERSION=2.10.7
 ARG MARIADB_CONNECTOR_VERSION=3.5.3
@@ -10,58 +12,84 @@ RUN apt-get update && \
 
 WORKDIR /build
 
-# Download and unpack Hibiscus
-RUN wget -q "https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip" \
+RUN wget -q \
+        "https://www.willuhn.de/products/hibiscus-server/releases/hibiscus-server-${HIBISCUS_VERSION}.zip" \
         -O hibiscus.zip && \
     unzip -q hibiscus.zip && \
-    rm hibiscus.zip
-
-# Remove Windows-only artefacts
-RUN rm -f hibiscus-server/jameicaserver.exe \
-          hibiscus-server/jameica-win32.jar
-
-# Replace bundled MySQL jars with a single up-to-date MariaDB connector
-RUN rm -f hibiscus-server/lib/mysql/* && \
-    wget -q "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
+    rm hibiscus.zip && \
+    # Remove Windows-only artefacts
+    rm -f hibiscus-server/jameicaserver.exe hibiscus-server/jameica-win32.jar && \
+    # Replace bundled MySQL jars with a single up-to-date MariaDB connector
+    rm -f hibiscus-server/lib/mysql/* && \
+    wget -q \
+        "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
         -P hibiscus-server/lib/mysql/
 
-# ── Stage 2: runtime ──────────────────────────────────────────────────────────
+# ── Stage 2: python-venv ──────────────────────────────────────────────────────
+# Builds an isolated Python venv with provisioning dependencies.
+# Isolating pip work here means no pip/wheel/setuptools in the final image.
+FROM ubuntu:24.04 AS python-venv
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-venv python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY provision/requirements.txt /tmp/requirements.txt
+
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
+
+# ── Stage 3: runtime ──────────────────────────────────────────────────────────
 FROM ubuntu:24.04
 
 ARG USERNAME=hibiscus
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-# Create non-root user
-RUN groupadd --gid $USER_GID $USERNAME && \
-    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+LABEL org.opencontainers.image.title="Hibiscus Server" \
+      org.opencontainers.image.description="Dockerized HBCI/FinTS online banking server" \
+      org.opencontainers.image.source="https://github.com/DominikLudwig1995/Hibiscus-Docker-Server" \
+      org.opencontainers.image.licenses="MIT"
 
-# Runtime dependencies only — no build tools
+RUN groupadd --gid $USER_GID $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID --create-home $USERNAME
+
+# Runtime packages only — no build or download tooling
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         default-jre-headless \
+        python3 \
         wget \
         ca-certificates && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Provisioning venv (no pip, no wheel, no setuptools)
+COPY --from=python-venv /opt/venv /opt/venv
+
+# Provisioning scripts and templates
+COPY --chown=$USERNAME:$USERNAME provision/ /opt/provision/
+
+# Hibiscus application
+COPY --from=hibiscus-fetch --chown=$USERNAME:$USERNAME /build/hibiscus-server \
+    /home/$USERNAME/hibiscus-server
+
+# Static non-secret config (auto-update disabled — updates are handled via image rebuilds)
+COPY --chown=$USERNAME:$USERNAME files/UpdateService.properties \
+    /home/$USERNAME/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties
+
+# Container entrypoint: provisions secrets then starts Hibiscus
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+              /home/$USERNAME/hibiscus-server/jameicaserver.sh
+
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-# Copy prepared Hibiscus installation from builder
-COPY --from=builder --chown=$USERNAME:$USERNAME /build/hibiscus-server ./hibiscus-server
-
-# Bake in static configuration (non-secret)
-COPY --chown=$USERNAME:$USERNAME files/UpdateService.properties \
-    hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties
-COPY --chown=$USERNAME:$USERNAME files/Plugin.properties \
-    hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties
-
-RUN chmod +x hibiscus-server/jameicaserver.sh
-
 EXPOSE 8888
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD wget -qO- http://localhost:8888/ || exit 1
 
-CMD ["./hibiscus-server/jameicaserver.sh", "-w", "/run/secret/pwd"]
+ENTRYPOINT ["/entrypoint.sh"]

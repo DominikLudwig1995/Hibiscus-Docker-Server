@@ -5,22 +5,22 @@
 [![Ubuntu 24.04](https://img.shields.io/badge/ubuntu-24.04-orange?logo=ubuntu)](https://hub.docker.com/_/ubuntu)
 
 Dockerized [Hibiscus Server](https://www.willuhn.de/products/hibiscus-server/) — a self-hosted HBCI/FinTS online banking server.  
-Runs on `linux/amd64` and `linux/arm64` (Raspberry Pi, Apple Silicon).  
-Pre-built images are published to the GitHub Container Registry on every push to `main` and on git version tags.
+Runs on `linux/amd64` and `linux/arm64` (Raspberry Pi, Apple Silicon).
+
+**Config is provisioned at startup** from environment variables — no manual editing of `.properties` files, no secret files baked into the image.
 
 ---
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
+- [How It Works](#how-it-works)
 - [Image Tags](#image-tags)
-- [Provisioning](#provisioning)
-- [Configuration](#configuration)
-- [Building Locally](#building-locally)
-- [Testing](#testing)
 - [Environment Variables](#environment-variables)
 - [Secrets](#secrets)
+- [Provisioning CLI](#provisioning-cli)
+- [Building Locally](#building-locally)
+- [Testing](#testing)
 - [Upgrading Hibiscus](#upgrading-hibiscus)
 - [Troubleshooting](#troubleshooting)
 
@@ -28,26 +28,47 @@ Pre-built images are published to the GitHub Container Registry on every push to
 
 ## Quick Start
 
-Pull the image and start the server with dummy secrets for local testing:
-
 ```bash
-# Copy dummy secrets
-cp secrets/HBCIDBService.properties.dummy  secrets/HBCIDBService.properties
-cp secrets/PinTanConfig.properties.dummy   secrets/PinTanConfig.properties
-cp secrets/pwd.dummy                       secrets/pwd
+# Create secret files (one value per file)
+mkdir -p secrets
+echo "hibiscus_master_password" > secrets/hibiscus_password
+echo "db_user"                  > secrets/db_username
+echo "db_pass"                  > secrets/db_password
 
-# Start
-SECRETS_PATH=./secrets JAMEICA_DATA_PATH=./.jameica docker compose up -d
+# Start (defaults: db on 127.0.0.1:3306, web on :8888)
+SECRETS_PATH=./secrets docker compose up -d
 ```
 
 Open `http://localhost:8888` in your browser.
 
 ---
 
-## Prerequisites
+## How It Works
 
-- Docker >= 24.0
-- Docker Compose >= 2.0
+The container follows a three-stage build and a provisioning-on-startup pattern:
+
+```
+┌─────────────────────┐   ┌───────────────────────┐
+│  hibiscus-fetch     │   │  python-venv           │
+│  (build stage)      │   │  (build stage)         │
+│                     │   │                        │
+│  Downloads Hibiscus │   │  pip install into      │
+│  + MariaDB jar      │   │  /opt/venv             │
+└────────┬────────────┘   └──────────┬─────────────┘
+         │                           │
+         └────────────┬──────────────┘
+                      ▼
+         ┌────────────────────────┐
+         │  runtime               │
+         │                        │
+         │  ENTRYPOINT:           │
+         │  1. provision render   │  ← renders Jinja2 templates
+         │     --from-env         │    from HIBISCUS_* env vars
+         │  2. exec jameicaserver │  ← starts Hibiscus
+         └────────────────────────┘
+```
+
+At startup, `provision.py render --from-env` reads `HIBISCUS_*` environment variables, renders the Jinja2 templates into the Hibiscus `cfg/` directory, and writes the password file — then `exec`s the Hibiscus process so signals are forwarded correctly.
 
 ---
 
@@ -57,77 +78,108 @@ Images are published to `ghcr.io/dominikludwig1995/hibiscus`.
 
 | Tag | Description |
 |-----|-------------|
-| `main` | Latest build from the `main` branch |
+| `main` | Latest build from the `main` branch (mutable) |
 | `sha-<commit>` | Immutable build pinned to a specific commit |
 | `v2.10.7` | Full semver tag (on git release tags) |
-| `2.10` | Minor version alias (on git release tags) |
-| `2` | Major version alias (on git release tags) |
+| `2.10` | Minor version alias |
+| `2` | Major version alias |
 
-**Recommendation:** pin to a specific `sha-` or semver tag in production — never rely on a mutable branch tag for stability.
+**Pin to `sha-` or a semver tag in production** — never rely on a mutable tag for stability.
 
-```bash
-# Pull a specific immutable version
-docker pull ghcr.io/dominikludwig1995/hibiscus:sha-abc1234
+---
 
-# Pull latest main branch build (mutable)
-docker pull ghcr.io/dominikludwig1995/hibiscus:main
+## Environment Variables
+
+### Required
+
+| Variable | `_FILE` variant | Description |
+|---|---|---|
+| `HIBISCUS_PASSWORD` | `HIBISCUS_PASSWORD_FILE` | Hibiscus master password |
+| `HIBISCUS_DB_USERNAME` | `HIBISCUS_DB_USERNAME_FILE` | Database username |
+| `HIBISCUS_DB_PASSWORD` | `HIBISCUS_DB_PASSWORD_FILE` | Database password |
+
+### Optional
+
+| Variable | Default | Description |
+|---|---|---|
+| `HIBISCUS_DB_HOST` | `127.0.0.1` | Database host |
+| `HIBISCUS_DB_PORT` | `3306` | Database port |
+| `HIBISCUS_DB_NAME` | `hibiscus` | Database name |
+| `HIBISCUS_HTTP_PORT` | `8888` | Hibiscus web interface port |
+| `HIBISCUS_HTTP_AUTH` | `true` | Enable HTTP basic auth |
+| `HIBISCUS_HTTP_SSL` | `true` | Enable SSL on the web interface |
+| `HIBISCUS_ACCOUNTS_FILE` | — | Path to a YAML file with bank account entries |
+
+### `_FILE` convention
+
+Every secret variable supports a `_FILE` variant that reads the value from a file path. This is the standard Docker secrets pattern:
+
+```yaml
+# docker-compose.yml
+environment:
+  HIBISCUS_PASSWORD_FILE: /run/secrets/hibiscus_password
+secrets:
+  - hibiscus_password
 ```
 
 ---
 
-## Provisioning
+## Secrets
 
-The `provision/` directory contains a Python script that renders Jinja2 templates into ready-to-use secret files.  
-This replaces manual editing of `.properties` files and is safe to run in CI or as part of your deployment pipeline.
+The `docker-compose.yml` uses Docker Compose secrets. Create one file per secret:
 
-### Setup
-
-```bash
-pip install -r provision/requirements.txt
+```
+secrets/
+  hibiscus_password   ← Hibiscus master password
+  db_username         ← Database username
+  db_password         ← Database password
 ```
 
-### Usage
+Set `SECRETS_PATH` to point to your secrets directory (default: `/opt/hibiscus/secrets`).
 
-```bash
-# Copy and edit the example config
-cp provision/config.example.yml provision/config.yml
-$EDITOR provision/config.yml
+For bank account configuration (PIN/TAN), create a YAML file and mount it:
 
-# Dry run — prints rendered output without writing files
-python provision/provision.py --config provision/config.yml --dry-run
-
-# Write files to ./secrets/
-python provision/provision.py --config provision/config.yml --out ./secrets
+```yaml
+# accounts.yml
+- name: mybank
+  server: hbci.mybank.de
+  blz: "12345678"
+  userid: myuserid
+  hbciversion: "300"
 ```
 
-### Templates
-
-| Template | Output file | Purpose |
-|----------|-------------|---------|
-| `HBCIDBService.properties.j2` | `HBCIDBService.properties` | Database connection |
-| `PinTanConfig.properties.j2` | `PinTanConfig.properties` | Bank account / PIN-TAN config |
-| `Plugin.properties.j2` | `Plugin.properties` | Web interface settings |
-
-`config.example.yml` documents every available variable with defaults and comments.
+```yaml
+environment:
+  HIBISCUS_ACCOUNTS_FILE: /run/secrets/accounts.yml
+secrets:
+  - accounts.yml
+```
 
 ---
 
-## Configuration
+## Provisioning CLI
 
-### Production
-
-1. Copy your secrets to the server:
+The provisioning script can also be used standalone for local development and CI:
 
 ```bash
-scp -r secrets/ user@<your-server>:/opt/hibiscus/secrets/
-```
+cd provision
+pip install -r requirements.txt
 
-2. Create a `.env` file on the server (see [Environment Variables](#environment-variables)).
+# Validate a config file
+python provision.py validate --config config.example.yml
 
-3. Start the stack:
+# Preview rendered output without writing files
+python provision.py render --config config.example.yml --dry-run
 
-```bash
-docker compose --env-file .env up -d
+# Write to a secrets directory
+python provision.py render --config config.example.yml --out ./secrets
+
+# Read from environment variables
+HIBISCUS_PASSWORD=secret HIBISCUS_DB_USERNAME=admin HIBISCUS_DB_PASSWORD=pass \
+  python provision.py render --from-env --dry-run
+
+# Show resolved config (secrets masked)
+python provision.py show --config config.example.yml
 ```
 
 ---
@@ -141,7 +193,7 @@ docker build -t hibiscus:local .
 # Build with a specific version
 docker build --build-arg HIBISCUS_VERSION=2.10.7 -t hibiscus:2.10.7 .
 
-# Multi-platform build (requires Buildx)
+# Multi-platform build
 docker buildx build --platform linux/amd64,linux/arm64 -t hibiscus:local .
 ```
 
@@ -156,6 +208,8 @@ pip install -r provision/requirements.txt pytest
 pytest tests/test_provision.py -v
 ```
 
+32 tests covering config loading, env var parsing, `_FILE` secrets, all three Jinja2 templates, validation, and the full CLI surface.
+
 ### Container structure tests
 
 Requires [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test).
@@ -165,70 +219,31 @@ docker build -t hibiscus:test .
 container-structure-test test --image hibiscus:test --config tests/container-structure-test.yml
 ```
 
-Both test suites run automatically in CI on every push and pull request.
-
----
-
-## Environment Variables
-
-| Variable            | Default                  | Description                              |
-|---------------------|--------------------------|------------------------------------------|
-| `SECRETS_PATH`      | `/opt/hibiscus/secrets`  | Host directory containing secret files   |
-| `JAMEICA_DATA_PATH` | `/opt/hibiscus/data`     | Host directory for persistent Jameica data |
-| `HIBISCUS_PORT`     | `8888`                   | Host port to expose                      |
-
-Example `.env` file:
-
-```env
-SECRETS_PATH=/opt/hibiscus/secrets
-JAMEICA_DATA_PATH=/opt/hibiscus/data
-HIBISCUS_PORT=8888
-```
-
----
-
-## Secrets
-
-The following files must be present in `SECRETS_PATH` and are mounted read-only:
-
-| File                          | Purpose                             |
-|-------------------------------|-------------------------------------|
-| `pwd`                         | Hibiscus master password            |
-| `HBCIDBService.properties`    | HBCI database connection settings  |
-| `PinTanConfig.properties`     | PIN/TAN passport configuration      |
-
-Dummy templates are provided in the `secrets/` directory of this repository.
+Both suites run automatically in CI on every push and pull request.
 
 ---
 
 ## Upgrading Hibiscus
 
-Update `HIBISCUS_VERSION` in `docker-compose.yml`, then rebuild:
+Update `HIBISCUS_VERSION` in `docker-compose.yml` (or pass it as a build arg), then rebuild:
 
 ```bash
 docker compose build --no-cache
 docker compose up -d
 ```
 
-Or pass the version directly at build time:
-
-```bash
-docker build --build-arg HIBISCUS_VERSION=2.10.8 -t hibiscus:2.10.8 .
-```
-
 ---
 
 ## Troubleshooting
 
-**Container exits immediately**
-- Verify all three secret files exist and are correctly mounted.
-- Run `docker logs hibiscus` for details.
+**Container exits immediately**  
+Run `docker logs hibiscus`. The provisioner prints which env vars are missing before exiting.
 
-**Port already in use**
-- Set `HIBISCUS_PORT` in your `.env` file to a free port.
+**Port already in use**  
+Set `HIBISCUS_HTTP_PORT` and `HIBISCUS_PORT` in your `.env` file.
 
-**Arm64 / Raspberry Pi issues**
-- Use the pre-built multi-arch image from GHCR — it includes native `linux/arm64` layers and does not require emulation.
+**Arm64 / Raspberry Pi**  
+Use the pre-built GHCR image — it ships native `linux/arm64` layers; no emulation needed.
 
-**Health check failing**
-- The server needs ~60 seconds to start. The health check has a `start_period` of 60s — give it time before investigating.
+**Health check failing**  
+The server needs ~90 seconds to start. The `start_period` is set to 90s — wait before investigating.

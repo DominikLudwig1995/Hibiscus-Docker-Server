@@ -9,6 +9,21 @@ commandTests:
     args: ["-version"]
     exitCode: 0
 
+  - name: "Python3 is available"
+    command: "python3"
+    args: ["--version"]
+    exitCode: 0
+
+  - name: "Provisioning venv is installed"
+    command: "/opt/venv/bin/python"
+    args: ["-c", "import jinja2, yaml, click, rich"]
+    exitCode: 0
+
+  - name: "Provision CLI responds to --help"
+    command: "/opt/venv/bin/python"
+    args: ["/opt/provision/provision.py", "--help"]
+    exitCode: 0
+
   - name: "Hibiscus startup script exists and is executable"
     command: "test"
     args: ["-x", "/home/hibiscus/hibiscus-server/jameicaserver.sh"]
@@ -21,12 +36,17 @@ commandTests:
 
   - name: "No Windows artefacts remain"
     command: "sh"
-    args: ["-c", "! ls /home/hibiscus/hibiscus-server/jameicaserver.exe 2>/dev/null"]
+    args: ["-c", "! test -f /home/hibiscus/hibiscus-server/jameicaserver.exe"]
     exitCode: 0
 
   - name: "No legacy MySQL connector jars remain"
     command: "sh"
     args: ["-c", "! ls /home/hibiscus/hibiscus-server/lib/mysql/mysql-connector-java-*.jar 2>/dev/null"]
+    exitCode: 0
+
+  - name: "Entrypoint script is executable"
+    command: "test"
+    args: ["-x", "/entrypoint.sh"]
     exitCode: 0
 
 fileExistenceTests:
@@ -35,23 +55,32 @@ fileExistenceTests:
     shouldExist: true
     isDirectory: true
 
-  - name: "UpdateService config"
+  - name: "Provisioning script"
+    path: "/opt/provision/provision.py"
+    shouldExist: true
+
+  - name: "Jinja2 templates directory"
+    path: "/opt/provision/templates"
+    shouldExist: true
+    isDirectory: true
+
+  - name: "HBCIDBService template"
+    path: "/opt/provision/templates/HBCIDBService.properties.j2"
+    shouldExist: true
+
+  - name: "PinTanConfig template"
+    path: "/opt/provision/templates/PinTanConfig.properties.j2"
+    shouldExist: true
+
+  - name: "Plugin template"
+    path: "/opt/provision/templates/Plugin.properties.j2"
+    shouldExist: true
+
+  - name: "UpdateService static config"
     path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
     shouldExist: true
 
-  - name: "Plugin (webadmin) config"
-    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties"
-    shouldExist: true
-
-  - name: "jameicaserver.sh"
-    path: "/home/hibiscus/hibiscus-server/jameicaserver.sh"
-    shouldExist: true
-
 fileContentTests:
-  - name: "HTTP port is 8888"
-    path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.webadmin.Plugin.properties"
-    expectedContents: ["listener.http.port=8888"]
-
   - name: "Auto-update is disabled"
     path: "/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.services.UpdateService.properties"
     expectedContents: ["update.check=false"]

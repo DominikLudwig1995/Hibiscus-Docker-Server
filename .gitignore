@@ -77,3 +77,14 @@ fabric.properties
 
 # *.iml
 # modules.xml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Local secrets
+secrets/*.properties
+secrets/pwd
+provision/config.yml

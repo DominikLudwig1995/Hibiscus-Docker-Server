@@ -1,16 +1,32 @@
 services:
-  hibiscus-service:
-    image: ghcr.io/dominikludwig1995/hibiscus:latest
+  hibiscus:
+    image: ghcr.io/dominikludwig1995/hibiscus:main
     container_name: hibiscus
     restart: unless-stopped
     build:
       context: .
       args:
         HIBISCUS_VERSION: "2.10.7"
+    environment:
+      # Database connection
+      HIBISCUS_DB_HOST:     ${HIBISCUS_DB_HOST:-127.0.0.1}
+      HIBISCUS_DB_PORT:     ${HIBISCUS_DB_PORT:-3306}
+      HIBISCUS_DB_NAME:     ${HIBISCUS_DB_NAME:-hibiscus}
+      # Secrets — prefer *_FILE variants for Docker secrets / mounted files
+      HIBISCUS_DB_USERNAME_FILE:  /run/secrets/db_username
+      HIBISCUS_DB_PASSWORD_FILE:  /run/secrets/db_password
+      HIBISCUS_PASSWORD_FILE:     /run/secrets/hibiscus_password
+      # Web interface
+      HIBISCUS_HTTP_PORT:   ${HIBISCUS_HTTP_PORT:-8888}
+      HIBISCUS_HTTP_AUTH:   ${HIBISCUS_HTTP_AUTH:-true}
+      HIBISCUS_HTTP_SSL:    ${HIBISCUS_HTTP_SSL:-true}
+      # Optional: path to a YAML file with bank account entries
+      # HIBISCUS_ACCOUNTS_FILE: /run/secrets/accounts.yml
+    secrets:
+      - db_username
+      - db_password
+      - hibiscus_password
     volumes:
-      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/pwd:/run/secret/pwd:ro
-      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/HBCIDBService.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties:ro
-      - ${SECRETS_PATH:-/opt/hibiscus/secrets}/PinTanConfig.properties:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties:ro
       - ${JAMEICA_DATA_PATH:-/opt/hibiscus/data}:/home/hibiscus/.jameica:rw
     ports:
       - "${HIBISCUS_PORT:-8888}:8888"
@@ -19,13 +35,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
-  # Uncomment for local development with dummy secrets
-  # hibiscus-dev:
-  #   extends:
-  #     service: hibiscus-service
-  #   volumes:
-  #     - ./secrets/pwd.dummy:/run/secret/pwd:ro
-  #     - ./secrets/HBCIDBService.properties.dummy:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.rmi.HBCIDBService.properties:ro
-  #     - ./secrets/PinTanConfig.properties.dummy:/home/hibiscus/hibiscus-server/cfg/de.willuhn.jameica.hbci.passports.pintan.rmi.PinTanConfig.properties:ro
+secrets:
+  db_username:
+    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/db_username
+  db_password:
+    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/db_password
+  hibiscus_password:
+    file: ${SECRETS_PATH:-/opt/hibiscus/secrets}/hibiscus_password

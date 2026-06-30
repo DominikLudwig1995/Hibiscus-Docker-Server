@@ -1,10 +1,16 @@
 # Hibiscus provisioning config — copy to config.yml and fill in your values.
-# Run: python provision.py --config config.yml
+#
+#   python provision.py render --config config.yml --out ./secrets
+#   python provision.py validate --config config.yml
+#   python provision.py show --config config.yml
+#
+# For Docker deployments prefer --from-env with HIBISCUS_* env vars.
+# See docker-compose.yml for the full env var reference.
 
-# Master password for the Hibiscus keystore
+# Hibiscus master password (unlocks the keystore)
 hibiscus_password: "changeme"
 
-# Web interface settings
+# Web interface
 http_port: 8888
 http_auth: true
 http_ssl: true
@@ -15,14 +21,14 @@ db_port: 3306
 db_name: "hibiscus"
 db_username: "hibiscus"
 db_password: "changeme"
-# db_driver: "de.willuhn.jameica.hbci.server.DBSupportMySqlImpl"  # default
 
-# Bank accounts (one entry per account)
+# Bank accounts for PIN/TAN (one entry per account).
+# In Docker deployments, mount this list via HIBISCUS_ACCOUNTS_FILE.
 accounts:
   - name: "mybank"
     server: "hbci.mybank.de"
     port: 443
     blz: "12345678"
     userid: "myuserid"
-    customerid: "myuserid"   # optional, defaults to userid
+    customerid: "myuserid"   # optional — defaults to userid
     hbciversion: "300"       # optional

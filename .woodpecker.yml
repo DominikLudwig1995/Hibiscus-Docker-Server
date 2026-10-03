@@ -1,0 +1,20 @@
+# Woodpecker CI, mirroring the test and build jobs of
+# .github/workflows/docker-image.yml (publishing stays on GitHub).
+when:
+  - event: push
+    branch: ${CI_REPO_DEFAULT_BRANCH}
+  - event: pull_request
+
+steps:
+  test-provision:
+    image: python:3.14-slim
+    commands:
+      - pip install -r provision/requirements.txt pytest==9.1.1
+      - pytest tests/test_provision.py -v
+
+  docker:
+    image: docker.io/woodpeckerci/plugin-docker-buildx:6.1.2
+    depends_on: [test-provision]
+    settings:
+      repo: hibiscus
+      dry_run: true

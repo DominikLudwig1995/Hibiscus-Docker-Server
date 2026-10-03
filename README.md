@@ -142,6 +142,22 @@ tar czf jameica-backup-$(date +%Y%m%d).tar.gz ./data/jameica
 
 Keep the two backup files together — you need both to restore.
 
+### Upgrading to PostgreSQL 18
+
+The stack switched from PostgreSQL 17 to 18. A major version cannot open the
+previous version's data directory, so existing installations migrate once:
+
+```bash
+git pull                                # new docker-compose.yml
+sh scripts/upgrade-postgres-18.sh       # dump from 17, restore into 18
+```
+
+The script stops Hibiscus, dumps the database from the old volume with a
+temporary PostgreSQL 17 container, starts PostgreSQL 18 on the new volume
+`postgres18-data`, restores the dump, checks that every table arrived and
+starts Hibiscus again. The old volume and the dump file are kept as a backup;
+remove them once Hibiscus works. New installations need none of this.
+
 ### Restore from backup
 
 ```bash

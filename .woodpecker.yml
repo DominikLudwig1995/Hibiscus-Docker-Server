@@ -7,7 +7,7 @@ when:
 
 steps:
   test-provision:
-    image: python:3.14-slim
+    image: homelab/ci-python:3.14
     commands:
       - pip install -r provision/requirements.txt pytest==9.1.1
       - pytest tests/test_provision.py -v

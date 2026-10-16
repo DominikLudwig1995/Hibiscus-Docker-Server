@@ -4,7 +4,7 @@
 
 **Your own online banking server — self-hosted, private, no third parties.**
 
-[![CI](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/actions/workflows/docker-image.yml/badge.svg)](https://github.com/DominikLudwig1995/Hibiscus-Docker-Server/actions/workflows/docker-image.yml)
+[![CI](https://ci.hieronymi-ludwig.de/api/badges/20/status.svg?branch=main)](https://ci.hieronymi-ludwig.de/repos/20)
 [![Hibiscus](https://img.shields.io/badge/hibiscus--server-2.12.4-green)](https://www.willuhn.de/products/hibiscus-server/)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-lightgrey)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

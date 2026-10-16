@@ -24,6 +24,9 @@ steps:
       context: .
     when:
       - event: pull_request
+        # Docs-only changes do not need an image build.
+        path:
+          exclude: ["**/*.md", "*.md", "LICENSE*", "docs/**"]
 
   image:
     image: woodpeckerci/plugin-kaniko:2.3.3
@@ -44,3 +47,6 @@ steps:
     when:
       - event: [push, manual]
         branch: ${CI_REPO_DEFAULT_BRANCH}
+        # Docs-only changes do not need an image build.
+        path:
+          exclude: ["**/*.md", "*.md", "LICENSE*", "docs/**"]

@@ -40,7 +40,7 @@ steps:
       password:
         from_secret: harbor_password
       cache: true
-      cache-repo: harbor.hieronymi-ludwig.de/homelab/hibiscus-cache
+      cache-repo: homelab/hibiscus-cache
     when:
       - event: [push, manual]
         branch: ${CI_REPO_DEFAULT_BRANCH}

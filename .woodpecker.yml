@@ -12,9 +12,35 @@ steps:
       - pip install -r provision/requirements.txt pytest==9.1.1
       - pytest tests/test_provision.py -v
 
-  docker:
-    image: docker.io/woodpeckerci/plugin-docker-buildx:6.1.2
-    depends_on: [test-provision]
+
+  # Container image: validated on PRs, pushed to Harbor from main.
+  image-check:
+    image: woodpeckerci/plugin-kaniko:2.3.3
     settings:
-      repo: hibiscus
-      dry_run: true
+      dry-run: true
+      registry: harbor.hieronymi-ludwig.de
+      repo: homelab/hibiscus
+      dockerfile: Dockerfile
+      context: .
+    when:
+      - event: pull_request
+
+  image:
+    image: woodpeckerci/plugin-kaniko:2.3.3
+    settings:
+      registry: harbor.hieronymi-ludwig.de
+      repo: homelab/hibiscus
+      dockerfile: Dockerfile
+      context: .
+      tags:
+        - latest
+        - ${CI_COMMIT_SHA:0:8}
+      username:
+        from_secret: harbor_username
+      password:
+        from_secret: harbor_password
+      cache: true
+      cache-repo: harbor.hieronymi-ludwig.de/homelab/hibiscus-cache
+    when:
+      - event: [push, manual]
+        branch: ${CI_REPO_DEFAULT_BRANCH}

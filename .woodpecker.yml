@@ -6,6 +6,11 @@ when:
   - event: pull_request
 
 steps:
+  mojibake:
+    image: python:3.15-slim
+    commands:
+      - python3 scripts/check_mojibake.py
+
   test-provision:
     image: homelab/ci-python:3.15
     commands:

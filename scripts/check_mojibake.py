@@ -8,6 +8,7 @@ like "M-Bahn" stays untouched.
 With file arguments (pre-commit) only those files are checked; without
 arguments the whole working tree is walked (CI).
 """
+
 import os
 import re
 import sys
@@ -15,16 +16,50 @@ import sys
 TOKEN = r"(?:M-\^[@-_]|M-[ -~])"
 RUN = re.compile(rf"(?:{TOKEN}){{2,}}")
 ONE = re.compile(r"M-\^([@-_])|M-([ -~])")
-SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", "target"}
-SKIP_EXT = (".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".woff", ".woff2", ".ttf", ".zip", ".gz",
-            ".lock", ".svg", ".xlsx", ".docx", ".tar", ".zst", ".jar", ".bin", ".pyc", ".webp", ".mp4")
+SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "dist",
+    "build",
+    ".next",
+    "target",
+}
+SKIP_EXT = (
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".pdf",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".zip",
+    ".gz",
+    ".lock",
+    ".svg",
+    ".xlsx",
+    ".docx",
+    ".tar",
+    ".zst",
+    ".jar",
+    ".bin",
+    ".pyc",
+    ".webp",
+    ".mp4",
+)
 SELF = os.path.basename(__file__)
 
 
 def decodes(run):
     data = bytearray()
     for m in ONE.finditer(run):
-        data.append(0x80 | (ord(m.group(1)) - 64) if m.group(1) else 0x80 | ord(m.group(2)))
+        data.append(
+            0x80 | (ord(m.group(1)) - 64) if m.group(1) else 0x80 | ord(m.group(2))
+        )
     try:
         bytes(data).decode("utf-8")
     except UnicodeDecodeError:
@@ -47,7 +82,8 @@ def main(paths):
         if os.path.basename(path) == SELF:
             continue
         try:
-            text = open(path, encoding="utf-8").read()
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
         except (OSError, UnicodeDecodeError):
             continue
         for no, line in enumerate(text.splitlines(), 1):

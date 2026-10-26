@@ -57,9 +57,8 @@ SELF = os.path.basename(__file__)
 def decodes(run):
     data = bytearray()
     for m in ONE.finditer(run):
-        data.append(
-            0x80 | (ord(m.group(1)) - 64) if m.group(1) else 0x80 | ord(m.group(2))
-        )
+        low = ord(m.group(1)) - 64 if m.group(1) else ord(m.group(2))
+        data.append(0x80 | low)
     try:
         bytes(data).decode("utf-8")
     except UnicodeDecodeError:

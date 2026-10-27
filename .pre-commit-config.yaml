@@ -18,3 +18,10 @@ repos:
         language: system
         types: [text]
         exclude: ^scripts/check_mojibake\.py$
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secrets in staged changes; skipped if gitleaks is not installed)
+        entry: sh -c 'command -v gitleaks >/dev/null 2>&1 || exit 0; exec gitleaks protect --staged --redact --no-banner'
+        language: system
+        pass_filenames: false

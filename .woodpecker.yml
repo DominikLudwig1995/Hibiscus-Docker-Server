@@ -6,6 +6,11 @@ when:
   - event: pull_request
 
 steps:
+  secrets-scan:
+    image: ghcr.io/gitleaks/gitleaks:v8.21.2
+    commands:
+      - gitleaks detect --no-git --source . --no-banner --redact --exit-code 1
+
   mojibake:
     image: python:3.15-slim
     commands:

@@ -47,7 +47,7 @@ steps:
       context: .
       tags:
         - latest
-        - ${CI_COMMIT_SHA:0:8}
+        - "${CI_COMMIT_SHA:0:8}"
       username:
         from_secret: harbor_username
       password:

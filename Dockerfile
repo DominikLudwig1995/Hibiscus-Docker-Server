@@ -5,7 +5,7 @@ ARG HIBISCUS_VERSION=2.12.4
 # renovate: datasource=maven depName=org.mariadb.jdbc:mariadb-java-client
 ARG MARIADB_CONNECTOR_VERSION=3.5.3
 # renovate: datasource=maven depName=org.postgresql:postgresql
-ARG POSTGRES_DRIVER_VERSION=42.7.7
+ARG POSTGRES_DRIVER_VERSION=42.7.12
 
 ENV DEBIAN_FRONTEND=noninteractive
 

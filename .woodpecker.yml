@@ -7,12 +7,12 @@ when:
 
 steps:
   secrets-scan:
-    image: ghcr.io/gitleaks/gitleaks:v8.30.1
+    image: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
     commands:
       - gitleaks detect --no-git --source . --no-banner --redact --exit-code 1
 
   mojibake:
-    image: python:3.15-slim
+    image: python:3.15-slim@sha256:8c13a3f37a6a5b71498228e902c4b9f51c1f7900d49fabf71f9a650c6120e0d0
     commands:
       - python3 scripts/check_mojibake.py
 
@@ -25,7 +25,7 @@ steps:
 
   # Container image: validated on PRs, pushed to Harbor from main.
   image-check:
-    image: woodpeckerci/plugin-kaniko:2.3.4
+    image: woodpeckerci/plugin-kaniko:2.3.4@sha256:497071c44ffd0c24d6e3e3e49993c33a6544eb30a5e3f887c031d2b643238432
     settings:
       dry-run: true
       registry: harbor.hieronymi-ludwig.de
@@ -39,7 +39,7 @@ steps:
           exclude: ["**/*.md", "*.md", "LICENSE*", "docs/**"]
 
   image:
-    image: woodpeckerci/plugin-kaniko:2.3.4
+    image: woodpeckerci/plugin-kaniko:2.3.4@sha256:497071c44ffd0c24d6e3e3e49993c33a6544eb30a5e3f887c031d2b643238432
     settings:
       registry: harbor.hieronymi-ludwig.de
       repo: homelab/hibiscus

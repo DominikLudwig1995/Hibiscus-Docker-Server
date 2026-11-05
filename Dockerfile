@@ -3,7 +3,7 @@ FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab0
 
 ARG HIBISCUS_VERSION=2.12.4
 # renovate: datasource=maven depName=org.mariadb.jdbc:mariadb-java-client
-ARG MARIADB_CONNECTOR_VERSION=3.5.11
+ARG MARIADB_CONNECTOR_VERSION=4.0.0
 # renovate: datasource=maven depName=org.postgresql:postgresql
 ARG POSTGRES_DRIVER_VERSION=42.7.12
 

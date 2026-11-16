@@ -1,5 +1,5 @@
 # ── Stage 1: hibiscus-fetch ───────────────────────────────────────────────────
-FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96 AS hibiscus-fetch
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db AS hibiscus-fetch
 
 ARG HIBISCUS_VERSION=2.12.4
 # renovate: datasource=maven depName=org.mariadb.jdbc:mariadb-java-client
@@ -32,7 +32,7 @@ RUN rm -f hibiscus-server/lib/mysql/* && \
         -P hibiscus-server/lib/mysql/
 
 # ── Stage 2: python-venv ──────────────────────────────────────────────────────
-FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96 AS python-venv
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db AS python-venv
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -47,7 +47,7 @@ RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
-FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db
 
 ARG USERNAME=hibiscus
 ARG USER_UID=1000

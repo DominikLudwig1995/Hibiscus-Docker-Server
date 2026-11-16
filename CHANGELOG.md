@@ -2,6 +2,13 @@
 
 One section per ISO week, generated from the merged pull requests (ProxmoxAnsible, scripts/changelog.py).
 
+## Week 2026-W46 (09.11. to 15.11.2026)
+
+- Changelog 2026-W45 ([#54](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/54), 11.11.)
+- Update postgres:18-alpine Docker digest to 9ba53c7 ([#55](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/55), 12.11.)
+- Update ubuntu:26.04 Docker digest to 065aa86 ([#56](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/56), 12.11.)
+- Update postgres:18-alpine Docker digest to 1018733 ([#57](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/57), 13.11.)
+
 ## Week 2026-W45 (02.11. to 08.11.2026)
 
 - CI: Image-Tag (Commit-SHA) als String quoten ([#43](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/43), 03.11.)

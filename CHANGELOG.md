@@ -2,6 +2,16 @@
 
 One section per ISO week, generated from the merged pull requests (ProxmoxAnsible, scripts/changelog.py).
 
+## Week 2026-W47 (16.11. to 22.11.2026)
+
+- Update postgres:18-alpine Docker digest to b6972e1 ([#58](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/58), 16.11.)
+- Update ubuntu:26.04 Docker digest to d66b366 ([#59](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/59), 16.11.)
+- Changelog 2026-W46 ([#60](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/60), 16.11.)
+- Update woodpeckerci/plugin-kaniko Docker tag to v2.3.5 ([#61](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/61), 17.11.)
+- Update postgres:18-alpine Docker digest to ff64c9e ([#62](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/62), 19.11.)
+- Update postgres Docker tag to v19 ([#63](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/63), 20.11.)
+- Update postgres:19-alpine Docker digest to 8b0ff4c ([#64](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/64), 21.11.)
+
 ## Week 2026-W46 (09.11. to 15.11.2026)
 
 - Changelog 2026-W45 ([#54](https://git.hieronymi-ludwig.de/dominik/Hibiscus-Docker-Server/pulls/54), 11.11.)
